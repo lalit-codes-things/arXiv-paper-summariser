@@ -1,0 +1,12 @@
+{
+  "name": "arxiv-research-copilot",
+  "version": "5.0.0",
+  "private": true,
+  "workspaces": ["apps/frontend"],
+  "scripts": {
+    "dev": "npm --workspace apps/frontend run dev",
+    "build": "npm --workspace apps/frontend run build",
+    "lint": "npm --workspace apps/frontend run lint",
+    "test": "python -m pytest apps/backend/tests"
+  }
+}
