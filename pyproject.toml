@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-paper-summariser"
+version = "8.0.0"
+description = "V8 literature review generation platform for arXiv paper collections"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "arXiv Paper Summariser Maintainers"}]
+keywords = ["arxiv", "literature-review", "summarisation", "citation-analysis", "clustering"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+[project.scripts]
+arxiv-lit-review = "arxiv_paper_summariser.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
