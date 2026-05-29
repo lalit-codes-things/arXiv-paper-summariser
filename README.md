@@ -1,94 +1,141 @@
-# Arxiv Research Copilot V3
+# Arxiv Research Copilot
 
-V3 turns the original arXiv paper summariser into a backend-first AI research platform. The new system provides a FastAPI REST API, PostgreSQL persistence, async repository/service layers, an embeddings pipeline, vector search, background processing, and a research memory model.
+Arxiv Research Copilot turns arXiv papers into structured research notes. V2 extends the original summarizer without changing the core flow: fetch arXiv metadata, download PDFs, extract text, summarize with an LLM, sync optional destinations, and store local JSON.
 
-## Architecture
+## V2 capabilities
+
+- **Structured JSON summaries** with typed fields for TL;DR, ELI5, technical summary, methodology, datasets, metrics, contributions, limitations, future work, flashcards, and suggested reading.
+- **Long-paper chunking** that tries to preserve section boundaries, avoids token overflow, and merges chunk-level summaries.
+- **Retry and resilience** through exponential backoff, request timeouts, and logging.
+- **Better prompts** for chunk summaries, merged summaries, and single-paper summaries.
+- **Citation extraction** from references and bibliography sections.
+- **Semantic Scholar enrichment** for citation counts, influential citations, related papers, and author metadata.
+- **Multi-level summaries** for quick reading, beginner explanations, and technical review.
+- **Flashcard generation** for Q/A, concept, and implementation cards.
+- **Related paper suggestions** from the LLM output and Semantic Scholar recommendations.
+- **Batch processing** for multiple arXiv IDs, category feeds, and newest `cs.AI` papers.
+
+## Repository structure
 
 ```text
-FastAPI API
-  ├── /papers, /paper/{id}, /process
-  ├── /search, /related/{id}, /trending
-  └── /memory/events, /memory/users/{id}
-        │
-Services layer
-  ├── PaperService          CRUD + processing queue orchestration
-  ├── SearchService         semantic + keyword retrieval
-  ├── IndexingService       chunk extraction + embeddings + vector upsert
-  ├── MemoryService         viewed papers, interests, topic clusters
-  └── TrendingService       activity-based discovery
-        │
-Repositories
-  ├── PaperRepository
-  ├── ProcessingJobRepository
-  └── MemoryRepository
-        │
-Storage
-  ├── PostgreSQL via async SQLAlchemy
-  ├── Qdrant vector database (or local in-memory vector store)
-  └── Redis-ready worker configuration
+.
+├── README.md
+├── pyproject.toml
+├── src/
+│   └── arxiv_copilot/
+│       ├── __init__.py
+│       ├── arxiv.py
+│       ├── citations.py
+│       ├── cli.py
+│       ├── flashcards.py
+│       ├── llm.py
+│       ├── notion.py
+│       ├── pdf.py
+│       ├── pipeline.py
+│       ├── prompts.py
+│       ├── schemas.py
+│       ├── storage.py
+│       ├── chunking/
+│       │   ├── __init__.py
+│       │   └── chunker.py
+│       ├── enrich/
+│       │   ├── __init__.py
+│       │   └── semantic_scholar.py
+│       └── utils/
+│           ├── __init__.py
+│           ├── http.py
+│           ├── logging.py
+│           └── retry.py
+└── tests/
+    ├── test_chunking.py
+    ├── test_citations_retry.py
+    ├── test_pipeline.py
+    └── test_schemas_and_llm.py
 ```
 
-## Key capabilities
-
-- **Semantic search** over embedded paper titles, abstracts, summaries, methodologies, topics, and contributions.
-- **Vector pipeline** that chunks paper fields, generates embeddings with `sentence-transformers`, and writes vectors to Qdrant or an in-memory backend.
-- **Research memory** tracking per-user viewed papers, interests, topic clusters, and reading history.
-- **Background workers** powered by APScheduler with a standalone worker entry point for queued summarization, embedding, and indexing jobs.
-- **Search indexing** for title, abstract, topics, contributions, and methodology in relational and vector stores.
-- **Scalable backend architecture** with dependency injection, repository pattern, async SQLAlchemy sessions, and swappable vector store interfaces.
-
-## API endpoints
-
-All application endpoints are prefixed with `/api/v3`.
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `GET` | `/papers` | List papers with pagination and optional topic filter. |
-| `POST` | `/papers` | Upsert a paper and its searchable metadata. |
-| `GET` | `/paper/{paper_id}` | Fetch a paper and record a view metric. |
-| `PATCH` | `/paper/{paper_id}` | Update paper metadata, summary, topics, or contributions. |
-| `POST` | `/process` | Queue paper summarization, embedding, and indexing work. |
-| `GET` | `/search?q=...` | Run semantic search with keyword fallback. |
-| `GET` | `/related/{paper_id}` | Find semantically related papers. |
-| `GET` | `/trending` | Return recently active papers ranked by views/searches. |
-| `POST` | `/memory/events` | Record reading-memory events. |
-| `GET` | `/memory/users/{user_id}` | Return user interests and topic clusters. |
-
-## Configuration
-
-Settings are loaded from environment variables or `.env`.
-
-```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/arxiv_copilot
-REDIS_URL=redis://localhost:6379/0
-VECTOR_BACKEND=qdrant
-QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=arxiv_papers
-EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
-EMBEDDING_DIMENSION=384
-```
-
-Use `VECTOR_BACKEND=memory` for local development without Qdrant.
-
-## Running locally
+## Installation
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev]
-alembic upgrade head
-uvicorn app.main:app --reload
+python -m pip install -e .
 ```
 
-Process one queued job manually:
+Optional extras:
 
 ```bash
-python scripts/worker.py
+python -m pip install -e '.[pdf,llm,dev]'
 ```
 
-## Example indexing flow
+- `pdf` installs `pypdf` for PDF text extraction.
+- `llm` installs the OpenAI SDK for real LLM summaries.
+- `dev` installs pytest.
 
-1. `POST /api/v3/papers` to create or update a paper.
-2. `POST /api/v3/process` with `task_type=full_pipeline` to queue embedding/indexing.
-3. Run `python scripts/worker.py` or start the API scheduler.
-4. Query `GET /api/v3/search?q=papers about small language models for education`.
+## CLI usage
+
+Process one or more arXiv IDs:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --arxiv-id 1810.04805
+```
+
+Process newest papers in a category:
+
+```bash
+arxiv-copilot --category cs.CL --max-results 5
+```
+
+Process newest AI papers:
+
+```bash
+arxiv-copilot --newest-ai --max-results 10
+```
+
+Use abstracts only and disable Semantic Scholar enrichment:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --no-pdf --no-semantic-scholar
+```
+
+## Python usage
+
+```python
+from arxiv_copilot.pipeline import default_pipeline
+
+pipeline = default_pipeline("data")
+pipeline.config.download_pdfs = False
+result = pipeline.process_arxiv_id("1706.03762")
+print(result.summary.tl_dr)
+```
+
+## Structured output schema
+
+Every summary is represented by `StructuredSummary` and serialized as JSON:
+
+```json
+{
+  "tl_dr": "...",
+  "eli5": "...",
+  "technical_summary": "...",
+  "methodology": ["..."],
+  "datasets": ["..."],
+  "metrics": ["..."],
+  "contributions": ["..."],
+  "limitations": ["..."],
+  "future_work": ["..."],
+  "flashcards": [
+    {"question": "...", "answer": "...", "kind": "qa", "source_section": "..."}
+  ],
+  "suggested_reading": [
+    {"title": "...", "reason": "...", "arxiv_id": "...", "url": "...", "citation_count": 0}
+  ]
+}
+```
+
+## Notes on providers
+
+The package ships with a deterministic `HeuristicLLMClient` for tests and offline development. Use `OpenAIJSONClient` when you want real model output. Semantic Scholar enrichment uses the public Graph API and accepts an optional API key through `SemanticScholarClient(api_key="...")`.
+
+## Testing
+
+```bash
+pytest
+```
