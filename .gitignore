@@ -1,23 +1,9 @@
-# Node
-node_modules/
-.next/
-out/
-dist/
-coverage/
-
-# Python
 __pycache__/
 *.py[cod]
-.venv/
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# Env
-.env
-.env.*
-!.env.example
-
-# Build
-*.log
-.DS_Store
+.venv/
+venv/
+data/
+*.egg-info/
+dist/
+build/
