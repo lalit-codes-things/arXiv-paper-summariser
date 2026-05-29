@@ -1,74 +1,141 @@
-# arXiv-paper-summariser
+# Arxiv Research Copilot
 
-V8 upgrades the project from single-paper summarisation into a deterministic literature-review platform for paper collections. It can cluster topics, synthesize citation-aware sections, analyze chronology and trend evolution, surface contradictions, identify research gaps, generate comparison tables, and produce a formatted bibliography.
+Arxiv Research Copilot turns arXiv papers into structured research notes. V2 extends the original summarizer without changing the core flow: fetch arXiv metadata, download PDFs, extract text, summarize with an LLM, sync optional destinations, and store local JSON.
 
-## V8 capabilities
+## V2 capabilities
 
-- **Literature synthesis engine**: orchestrates review generation from normalized paper records.
-- **Clustering pipeline**: groups papers into thematic topic clusters using lightweight TF-IDF keywords and token-set similarity.
-- **Citation-aware synthesis**: preserves in-collection citation links and injects formatted citations into generated review sections.
-- **Thematic grouping**: creates one section per discovered theme with evidence snippets.
-- **Chronology analysis**: tracks when themes appear and summarizes trend evolution over time.
-- **Contradiction detection**: detects likely disagreements from shared concepts with opposing claim polarity.
-- **Gap analysis**: highlights sparse themes, explicit limitations, and open challenges.
-- **Outputs**: structured Markdown literature reviews, citations, generated sections, bibliography, and comparison tables.
+- **Structured JSON summaries** with typed fields for TL;DR, ELI5, technical summary, methodology, datasets, metrics, contributions, limitations, future work, flashcards, and suggested reading.
+- **Long-paper chunking** that tries to preserve section boundaries, avoids token overflow, and merges chunk-level summaries.
+- **Retry and resilience** through exponential backoff, request timeouts, and logging.
+- **Better prompts** for chunk summaries, merged summaries, and single-paper summaries.
+- **Citation extraction** from references and bibliography sections.
+- **Semantic Scholar enrichment** for citation counts, influential citations, related papers, and author metadata.
+- **Multi-level summaries** for quick reading, beginner explanations, and technical review.
+- **Flashcard generation** for Q/A, concept, and implementation cards.
+- **Related paper suggestions** from the LLM output and Semantic Scholar recommendations.
+- **Batch processing** for multiple arXiv IDs, category feeds, and newest `cs.AI` papers.
 
-## Install
+## Repository structure
+
+```text
+.
+├── README.md
+├── pyproject.toml
+├── src/
+│   └── arxiv_copilot/
+│       ├── __init__.py
+│       ├── arxiv.py
+│       ├── citations.py
+│       ├── cli.py
+│       ├── flashcards.py
+│       ├── llm.py
+│       ├── notion.py
+│       ├── pdf.py
+│       ├── pipeline.py
+│       ├── prompts.py
+│       ├── schemas.py
+│       ├── storage.py
+│       ├── chunking/
+│       │   ├── __init__.py
+│       │   └── chunker.py
+│       ├── enrich/
+│       │   ├── __init__.py
+│       │   └── semantic_scholar.py
+│       └── utils/
+│           ├── __init__.py
+│           ├── http.py
+│           ├── logging.py
+│           └── retry.py
+└── tests/
+    ├── test_chunking.py
+    ├── test_citations_retry.py
+    ├── test_pipeline.py
+    └── test_schemas_and_llm.py
+```
+
+## Installation
 
 ```bash
 python -m pip install -e .
 ```
 
-## JSON input format
-
-The workflow accepts a JSON list of paper records. Required fields are `id`, `title`, `authors`, `year`, and `abstract`. Optional fields include `summary`, `keywords`, `citations`, `venue`, `doi`, `url`, `claims`, `methods`, `findings`, `limitations`, and `metadata`.
-
-```json
-[
-  {
-    "id": "p1",
-    "title": "Neural Retrieval for Scientific Discovery",
-    "authors": ["Ada Smith", "Grace Kim"],
-    "year": 2020,
-    "abstract": "Neural retrieval improves discovery across scientific corpora.",
-    "keywords": ["retrieval", "citations"],
-    "citations": [],
-    "claims": ["retrieval improves discovery"],
-    "methods": ["dual encoder"],
-    "findings": ["improved citation recommendation"],
-    "limitations": ["limited evaluation outside computer science"]
-  }
-]
-```
-
-## Generate a literature review
+Optional extras:
 
 ```bash
-arxiv-lit-review papers.json review.md --title "Neural Retrieval Literature Review" --citation-style apa
+python -m pip install -e '.[pdf,llm,dev]'
 ```
 
-Or use the Python API:
+- `pdf` installs `pypdf` for PDF text extraction.
+- `llm` installs the OpenAI SDK for real LLM summaries.
+- `dev` installs pytest.
+
+## CLI usage
+
+Process one or more arXiv IDs:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --arxiv-id 1810.04805
+```
+
+Process newest papers in a category:
+
+```bash
+arxiv-copilot --category cs.CL --max-results 5
+```
+
+Process newest AI papers:
+
+```bash
+arxiv-copilot --newest-ai --max-results 10
+```
+
+Use abstracts only and disable Semantic Scholar enrichment:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --no-pdf --no-semantic-scholar
+```
+
+## Python usage
 
 ```python
-from arxiv_paper_summariser import LiteratureSynthesisEngine, Paper, ReviewConfig
+from arxiv_copilot.pipeline import default_pipeline
 
-papers = [
-    Paper(
-        id="p1",
-        title="Neural Retrieval for Scientific Discovery",
-        authors=("Ada Smith", "Grace Kim"),
-        year=2020,
-        abstract="Neural retrieval improves discovery across scientific corpora.",
-        keywords=("retrieval", "citations"),
-    )
-]
-
-review = LiteratureSynthesisEngine(ReviewConfig(title="My Review")).generate_review(papers)
-print(review.to_markdown())
+pipeline = default_pipeline("data")
+pipeline.config.download_pdfs = False
+result = pipeline.process_arxiv_id("1706.03762")
+print(result.summary.tl_dr)
 ```
 
-## Development
+## Structured output schema
+
+Every summary is represented by `StructuredSummary` and serialized as JSON:
+
+```json
+{
+  "tl_dr": "...",
+  "eli5": "...",
+  "technical_summary": "...",
+  "methodology": ["..."],
+  "datasets": ["..."],
+  "metrics": ["..."],
+  "contributions": ["..."],
+  "limitations": ["..."],
+  "future_work": ["..."],
+  "flashcards": [
+    {"question": "...", "answer": "...", "kind": "qa", "source_section": "..."}
+  ],
+  "suggested_reading": [
+    {"title": "...", "reason": "...", "arxiv_id": "...", "url": "...", "citation_count": 0}
+  ]
+}
+```
+
+## Notes on providers
+
+The package ships with a deterministic `HeuristicLLMClient` for tests and offline development. Use `OpenAIJSONClient` when you want real model output. Semantic Scholar enrichment uses the public Graph API and accepts an optional API key through `SemanticScholarClient(api_key="...")`.
+
+## Testing
 
 ```bash
-python -m pytest
+pytest
 ```
