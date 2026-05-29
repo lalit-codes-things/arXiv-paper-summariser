@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-research-copilot-v4"
+version = "4.0.0"
+description = "Autonomous multi-agent arXiv research copilot with graph memory, trend detection, and daily digests."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+langgraph = ["langgraph>=0.2"]
+neo4j = ["neo4j>=5"]
+notion = ["requests>=2"]
+
+[project.scripts]
+arxiv-copilot-v4 = "arxiv_research_copilot_v4.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
