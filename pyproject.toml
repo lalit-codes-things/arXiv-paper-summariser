@@ -3,11 +3,22 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "arxiv-paper-summariser"
-version = "7.0.0"
-description = "Collaborative AI-native research cloud primitives for arXiv paper workflows."
+name = "arxiv-research-copilot"
+version = "0.2.0"
+description = "Structured arXiv research copilot with chunking, enrichment, and typed summaries"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [{ name = "Arxiv Research Copilot Contributors" }]
+dependencies = []
+
+[project.optional-dependencies]
+llm = ["openai>=1.0.0"]
+pdf = ["pypdf>=4.0.0"]
+http = ["requests>=2.31.0"]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+arxiv-copilot = "arxiv_copilot.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
