@@ -1,60 +1,39 @@
-# arXiv Paper Summariser — V17 Enterprise Platform
+# arXiv Paper Summariser — V18 AI-Native Scientific Ecosystem
 
-V17 upgrades the project from a single research utility into an enterprise-grade AI research infrastructure blueprint for regulated, multi-tenant deployments.
+V18 upgrades this repository from a paper summarisation concept into a persistent AI-native scientific ecosystem for autonomous discovery, long-term reasoning, cross-domain synthesis, scientific planning, and self-improving research agents.
 
-## V17 capabilities
+## V18 platform capabilities
 
-- **Multi-tenant architecture** with namespace isolation, per-tenant network policies, quotas, and database tenancy guidance.
-- **Audit logging** for authentication, authorization, paper ingestion, summarisation requests, model access, data export, and administrative changes.
-- **Observability** using OpenTelemetry, Prometheus, Grafana, Loki, Alertmanager, and SLO-oriented alerts.
-- **Monitoring** for API latency, error budgets, model-provider failures, queue health, cost controls, and Kubernetes saturation.
-- **Kubernetes deployment** manifests and a Helm chart for API, worker, web, ingress, policies, and secrets integration.
-- **CI/CD** with lint, security scanning, container build, IaC validation, and deployment gates.
-- **Autoscaling** with HPA and KEDA examples for HTTP and queue-driven workloads.
-- **SSO** via OIDC/SAML-ready configuration and group-to-role mapping.
-- **Compliance features** covering retention, encryption, data classification, access reviews, evidence collection, and policy-as-code.
+- **Autonomous discovery:** continuously scans literature, datasets, experiments, patents, code, and knowledge bases to identify new evidence and research opportunities.
+- **Persistent memory:** stores observations, hypotheses, plans, agent traces, experiment outcomes, and provenance in durable short-term, episodic, semantic, procedural, and strategic memory layers.
+- **Self-improving agents:** evaluates agent performance, captures reusable procedures, proposes safe workflow updates, and gates changes through governance checks.
+- **Long-term reasoning:** decomposes scientific goals into multi-horizon research programs with resumable plans, milestone tracking, and uncertainty-aware decision points.
+- **Cross-domain synthesis:** connects findings across fields by normalising concepts into a shared scientific knowledge graph and generating analogy, mechanism, and contradiction maps.
+- **Scientific planning:** converts hypotheses into executable research plans, experiment designs, simulation tasks, literature reviews, and validation protocols.
 
-## Repository layout
+## Generated V18 artifacts
 
-```text
-.github/workflows/         CI/CD pipeline definitions
-compliance/                Compliance controls, evidence, and audit event schema
-deploy/helm/               Enterprise Helm deployment stack
-deploy/kubernetes/         Kustomize-ready Kubernetes manifests
-infra/terraform/           Infrastructure-as-code for AWS EKS reference deployment
-monitoring/                Prometheus, Alertmanager, Grafana, Loki, and OTel config
-policies/                  OPA Gatekeeper policies and constraint examples
-scripts/                   Production operations tooling
-```
+| Area | Artifact | Purpose |
+| --- | --- | --- |
+| Platform architecture | [`docs/v18/platform-architecture.md`](docs/v18/platform-architecture.md) | Defines the AI-native ecosystem, control planes, agent layers, data flows, and operating model. |
+| Orchestration systems | [`docs/v18/orchestration-systems.md`](docs/v18/orchestration-systems.md) | Specifies advanced multi-agent orchestration, task routing, governance, and execution loops. |
+| Memory persistence | [`docs/v18/memory-persistence-architecture.md`](docs/v18/memory-persistence-architecture.md) | Designs durable memory stores, schemas, consolidation cycles, provenance, and retrieval strategies. |
+| Autonomous workflows | [`docs/v18/autonomous-scientific-workflows.md`](docs/v18/autonomous-scientific-workflows.md) | Describes discovery, synthesis, planning, experimentation, and validation workflows. |
+| Scalable cognition | [`docs/v18/scalable-cognitive-systems.md`](docs/v18/scalable-cognitive-systems.md) | Defines long-term reasoning, cognitive scaling patterns, self-improvement, and reliability controls. |
 
-## Quick start
+## Recommended implementation path
 
-1. Review the target architecture in [`docs/enterprise/V17_ARCHITECTURE.md`](docs/enterprise/V17_ARCHITECTURE.md).
-2. Configure infrastructure variables in [`infra/terraform/variables.tf`](infra/terraform/variables.tf).
-3. Plan the reference deployment:
+1. **Foundation:** implement ingestion connectors, content normalisation, provenance tracking, and initial vector/graph memory stores.
+2. **Autonomous discovery:** deploy literature-monitoring and novelty-detection agents with conservative human review gates.
+3. **Persistent cognition:** add episodic traces, hypothesis ledgers, reusable procedures, and reflection-driven memory consolidation.
+4. **Scientific planning:** introduce research-program planning, experiment design, simulation queues, and evidence confidence scoring.
+5. **Self-improvement:** enable performance telemetry, workflow proposal generation, regression benchmarks, and policy-gated agent updates.
+6. **Scale-out:** add distributed task queues, multi-tenant knowledge graphs, reproducible workflow execution, and cross-domain synthesis services.
 
-   ```bash
-   cd infra/terraform
-   terraform init
-   terraform plan -var='cluster_name=arxiv-v17-prod'
-   ```
+## Safety and governance principles
 
-4. Deploy application resources with Helm:
-
-   ```bash
-   helm upgrade --install arxiv-summariser deploy/helm/arxiv-summariser \
-     --namespace arxiv-prod --create-namespace \
-     --values deploy/helm/arxiv-summariser/values.yaml
-   ```
-
-5. Enable monitoring by applying the monitoring stack in [`monitoring/`](monitoring/).
-
-## Operational model
-
-V17 assumes production operation by a platform team with separation of duties:
-
-- **Platform admins** manage clusters, IaC, ingress, secrets, observability, and policies.
-- **Tenant admins** manage users, groups, quotas, and data retention inside assigned tenants.
-- **Researchers** access papers, run summarisation workflows, and export approved outputs.
-- **Auditors** receive read-only access to evidence bundles, audit logs, and compliance reports.
-
+- Preserve provenance for every claim, generated insight, workflow decision, and memory mutation.
+- Keep autonomous actions reversible, observable, and policy-gated.
+- Separate hypothesis generation from evidence validation and experimental recommendation.
+- Require confidence scoring, uncertainty representation, and contradiction tracking.
+- Maintain human approval gates for high-impact experimental, clinical, safety, or deployment decisions.
