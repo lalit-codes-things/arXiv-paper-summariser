@@ -1,0 +1,107 @@
+version: "10.0"
+platform: "autonomous-ai-scientist"
+goal: "Generate, critique, compare, and operationalise scientific research ideas from arXiv-scale literature."
+
+shared_memory:
+  paper_store:
+    records: [paper_id, title, authors, abstract, sections, figures, references]
+  claim_graph:
+    records: [claim_id, text, source, supports, contradicts, extends, assumes]
+  evidence_ledger:
+    records: [evidence_id, claim_id, method, sample_size, metric, uncertainty, quality_score]
+  theory_graph:
+    records: [theory_id, assumptions, mechanisms, predictions, boundary_conditions, status]
+  experiment_registry:
+    records: [experiment_id, hypothesis_id, design, protocol, metrics, falsification_criteria]
+  novelty_map:
+    records: [idea_id, nearest_prior_work, underexplored_dimensions, novelty_score]
+  review_archive:
+    records: [review_id, target_id, recommendation, weaknesses, required_revisions]
+
+agents:
+  theory_agent:
+    mission: "Build, compare, and revise explanatory theories."
+    inputs: [claim_graph, evidence_ledger, paper_store]
+    outputs: [theory_cards, comparison_matrices, theory_discriminating_predictions]
+    handoffs:
+      experiment_agent: "Design tests for predictions that separate competing theories."
+      reviewer_agent: "Critique theory assumptions and evidence coverage."
+
+  experiment_agent:
+    mission: "Convert hypotheses into rigorous experiment plans."
+    inputs: [hypotheses, theory_cards, evidence_ledger, resource_constraints]
+    outputs: [experiment_plans, ablation_plans, replication_plans, risk_registers]
+    handoffs:
+      reviewer_agent: "Stress-test controls, metrics, confounders, and feasibility."
+      research_gap_agent: "Record gaps revealed by infeasible or underpowered experiments."
+
+  reviewer_agent:
+    mission: "Simulate peer review and identify weak evidence."
+    inputs: [papers, theories, hypotheses, experiment_plans, evidence_ledger]
+    outputs: [review_reports, weak_evidence_flags, rebuttal_questions, revision_tasks]
+    handoffs:
+      theory_agent: "Revise theories with unresolved contradictions."
+      experiment_agent: "Strengthen experiment plans with controls and robustness checks."
+      novelty_agent: "Check whether claims or ideas are incremental."
+
+  novelty_agent:
+    mission: "Score originality and propose novel research ideas."
+    inputs: [paper_store, citation_graph, theory_graph, hypotheses]
+    outputs: [novelty_scores, nearest_prior_work, idea_variants, originality_risks]
+    handoffs:
+      experiment_agent: "Plan tests for high-novelty, feasible ideas."
+      research_gap_agent: "Map novel ideas to broader unexplored spaces."
+
+  research_gap_agent:
+    mission: "Identify unexplored spaces and maintain a research agenda."
+    inputs: [claim_graph, evidence_ledger, novelty_map, review_archive]
+    outputs: [gap_maps, opportunity_rankings, agenda_items, open_questions]
+    handoffs:
+      theory_agent: "Create theories for high-value unexplained gaps."
+      novelty_agent: "Generate idea variants for underexplored regions."
+
+workflows:
+  hypothesis_generation:
+    steps:
+      - mine_contradictions
+      - expand_boundary_conditions
+      - substitute_mechanisms
+      - transfer_cross_domain_patterns
+      - search_missing_variables
+      - generate_failure_driven_hypotheses
+      - score_testability_specificity_evidence_novelty_feasibility
+
+  experiment_planning:
+    steps:
+      - operationalise_variables
+      - select_design_type
+      - choose_datasets_and_baselines
+      - define_metrics
+      - add_controls_and_ablations
+      - check_power_feasibility_risk_ethics
+      - write_execution_protocol
+      - submit_to_reviewer_agent
+
+  theory_comparison:
+    steps:
+      - extract_candidate_theories
+      - create_theory_cards
+      - link_predictions_to_evidence
+      - score_evidence_quality
+      - identify_divergent_predictions
+      - design_discriminating_experiments
+      - run_reviewer_fairness_check
+      - update_theory_status
+
+ranking:
+  formula: "0.25*evidence_leverage + 0.20*novelty + 0.20*theory_discrimination + 0.15*feasibility + 0.10*impact + 0.10*reviewer_confidence - 0.15*risk"
+  thresholds:
+    pursue: 0.75
+    revise: 0.50
+    archive: 0.30
+
+human_gates:
+  - approve_research_goal
+  - approve_safety_sensitive_experiments
+  - lock_domain_assumptions
+  - approve_publication_ready_outputs

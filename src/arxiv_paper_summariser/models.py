@@ -1,177 +1,171 @@
-"""Core V13 data models for adaptive educational paper experiences."""
+"""Domain models for V8 literature-review generation."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Iterable
+from typing import Any
 
 
-class EducationMode(str, Enum):
-    """Supported learner profiles for explain-by-level experiences."""
+class CitationStyle(str, Enum):
+    """Supported bibliography and in-text citation styles."""
 
-    BEGINNER = "beginner"
-    UNDERGRADUATE = "undergraduate"
-    GRAD_STUDENT = "grad student"
-    RESEARCHER = "researcher"
-
-    @classmethod
-    def coerce(cls, value: "EducationMode | str") -> "EducationMode":
-        if isinstance(value, cls):
-            return value
-        normalised = value.strip().lower().replace("_", " ").replace("-", " ")
-        aliases = {
-            "grad": cls.GRAD_STUDENT,
-            "graduate": cls.GRAD_STUDENT,
-            "graduate student": cls.GRAD_STUDENT,
-            "undergrad": cls.UNDERGRADUATE,
-        }
-        if normalised in aliases:
-            return aliases[normalised]
-        for mode in cls:
-            if mode.value == normalised:
-                return mode
-        allowed = ", ".join(mode.value for mode in cls)
-        raise ValueError(f"Unsupported education mode {value!r}; expected one of: {allowed}")
+    APA = "apa"
+    IEEE = "ieee"
+    MLA = "mla"
 
 
 @dataclass(frozen=True)
 class Paper:
-    """A parsed paper payload used by V13 pipelines."""
+    """A normalized paper record used by the synthesis engine.
 
+    The model intentionally accepts already-summarized inputs as well as raw
+    abstracts so workflows can be fed from arXiv exports, curated CSV files, or
+    an upstream summarisation stage.
+    """
+
+    id: str
     title: str
+    authors: tuple[str, ...]
+    year: int
     abstract: str
-    sections: dict[str, str] = field(default_factory=dict)
+    summary: str = ""
     keywords: tuple[str, ...] = ()
+    citations: tuple[str, ...] = ()
+    venue: str = ""
+    doi: str = ""
+    url: str = ""
+    claims: tuple[str, ...] = ()
+    methods: tuple[str, ...] = ()
+    findings: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def full_text(self) -> str:
-        body = "\n\n".join(self.sections.values())
-        return f"{self.title}\n\n{self.abstract}\n\n{body}".strip()
+    def narrative(self) -> str:
+        """Return the best available descriptive text for analysis."""
 
-    @classmethod
-    def from_text(
-        cls,
-        title: str,
-        abstract: str,
-        body: str = "",
-        keywords: Iterable[str] = (),
-    ) -> "Paper":
-        sections = {"body": body} if body else {}
-        return cls(title=title, abstract=abstract, sections=sections, keywords=tuple(keywords))
+        return " ".join(
+            part
+            for part in (
+                self.title,
+                self.summary or self.abstract,
+                " ".join(self.keywords),
+                " ".join(self.claims),
+                " ".join(self.findings),
+            )
+            if part
+        )
 
+    @property
+    def lead_author(self) -> str:
+        """Return a stable lead-author label for citations."""
 
-@dataclass(frozen=True)
-class Concept:
-    """An extracted concept and lightweight pedagogical metadata."""
-
-    name: str
-    weight: int = 1
-    evidence: tuple[str, ...] = ()
-    prerequisites: tuple[str, ...] = ()
+        return self.authors[0] if self.authors else "Anonymous"
 
 
 @dataclass(frozen=True)
-class ConceptDependency:
-    """Directed edge representing that source should be learned before target."""
+class TopicCluster:
+    """A thematic cluster produced from a paper collection."""
 
-    source: str
-    target: str
-    relationship: str = "prerequisite"
-    strength: float = 1.0
-
-
-@dataclass(frozen=True)
-class ConceptGraph:
-    """Dependency graph for paper concepts."""
-
-    concepts: tuple[Concept, ...]
-    dependencies: tuple[ConceptDependency, ...]
-
-    def ordered_concepts(self) -> tuple[str, ...]:
-        """Return concepts in dependency-first order using a deterministic topological pass."""
-        names = [concept.name for concept in self.concepts]
-        incoming = {name: 0 for name in names}
-        outgoing: dict[str, list[str]] = {name: [] for name in names}
-        for dependency in self.dependencies:
-            if dependency.source in incoming and dependency.target in incoming:
-                incoming[dependency.target] += 1
-                outgoing[dependency.source].append(dependency.target)
-
-        queue = [name for name in names if incoming[name] == 0]
-        ordered: list[str] = []
-        while queue:
-            current = queue.pop(0)
-            ordered.append(current)
-            for target in sorted(outgoing[current]):
-                incoming[target] -= 1
-                if incoming[target] == 0:
-                    queue.append(target)
-        ordered.extend(name for name in names if name not in ordered)
-        return tuple(ordered)
+    id: str
+    label: str
+    paper_ids: tuple[str, ...]
+    keywords: tuple[str, ...]
+    summary: str
 
 
 @dataclass(frozen=True)
-class Explanation:
-    concept: str
-    mode: EducationMode
-    text: str
-    analogy: str | None = None
-    technical_depth: str = "medium"
+class CitationLink:
+    """A directed citation edge between two papers in the collection."""
+
+    source_id: str
+    target_id: str
+    target_in_collection: bool
 
 
 @dataclass(frozen=True)
-class QuizQuestion:
-    prompt: str
-    options: tuple[str, ...]
-    answer: str
-    explanation: str
-    difficulty: EducationMode
+class Contradiction:
+    """A detected tension or disagreement between papers."""
 
-
-@dataclass(frozen=True)
-class Lesson:
-    title: str
-    objectives: tuple[str, ...]
-    concepts: tuple[str, ...]
-    explanation: str
-    quiz: tuple[QuizQuestion, ...] = ()
-
-
-@dataclass(frozen=True)
-class MiniCourse:
-    title: str
-    mode: EducationMode
-    lessons: tuple[Lesson, ...]
-    capstone: str
-
-
-@dataclass(frozen=True)
-class LearningRoadmap:
-    mode: EducationMode
-    milestones: tuple[str, ...]
-    estimated_hours: float
-    checkpoints: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class TutoringTurn:
-    learner_message: str
-    tutor_response: str
-    recommended_next_step: str
+    paper_ids: tuple[str, str]
+    theme: str
+    description: str
     confidence: float
-    quiz: QuizQuestion | None = None
 
 
 @dataclass(frozen=True)
-class V13EducationalExperience:
-    """Complete V13 paper-to-learning artifact."""
+class TrendPoint:
+    """Chronological signal for a theme in a publication year."""
 
-    paper_title: str
-    mode: EducationMode
-    concept_graph: ConceptGraph
-    explanations: tuple[Explanation, ...]
-    prerequisites: tuple[str, ...]
-    roadmap: LearningRoadmap
-    mini_course: MiniCourse
-    diagnostic_quiz: tuple[QuizQuestion, ...]
+    year: int
+    theme: str
+    paper_ids: tuple[str, ...]
+    description: str
+
+
+@dataclass(frozen=True)
+class ReviewSection:
+    """A generated section in a structured literature review."""
+
+    title: str
+    body: str
+    citations: tuple[str, ...]
+    paper_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ComparisonTable:
+    """Markdown-compatible comparison table for the reviewed papers."""
+
+    headers: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+
+    def to_markdown(self) -> str:
+        """Render the table as GitHub-flavoured Markdown."""
+
+        header = "| " + " | ".join(self.headers) + " |"
+        divider = "| " + " | ".join("---" for _ in self.headers) + " |"
+        body = ["| " + " | ".join(row) + " |" for row in self.rows]
+        return "\n".join([header, divider, *body])
+
+
+@dataclass(frozen=True)
+class ReviewConfig:
+    """Controls deterministic V8 review generation."""
+
+    title: str = "Structured Literature Review"
+    citation_style: CitationStyle = CitationStyle.APA
+    max_cluster_keywords: int = 6
+    min_cluster_size: int = 1
+    include_method_table: bool = True
+    include_gap_analysis: bool = True
+    include_contradictions: bool = True
+    include_trends: bool = True
+
+
+@dataclass(frozen=True)
+class Review:
+    """Complete V8 literature review artifact."""
+
+    title: str
+    sections: tuple[ReviewSection, ...]
+    bibliography: tuple[str, ...]
+    clusters: tuple[TopicCluster, ...]
+    citation_graph: tuple[CitationLink, ...]
+    chronology: tuple[TrendPoint, ...]
+    contradictions: tuple[Contradiction, ...]
+    gaps: tuple[str, ...]
+    comparison_tables: tuple[ComparisonTable, ...]
+
+    def to_markdown(self) -> str:
+        """Render the review as a single Markdown document."""
+
+        lines = [f"# {self.title}", ""]
+        for section in self.sections:
+            lines.extend([f"## {section.title}", "", section.body, ""])
+        for index, table in enumerate(self.comparison_tables, start=1):
+            lines.extend([f"## Comparison Table {index}", "", table.to_markdown(), ""])
+        lines.extend(["## Bibliography", ""])
+        lines.extend(f"- {entry}" for entry in self.bibliography)
+        return "\n".join(lines).strip() + "\n"

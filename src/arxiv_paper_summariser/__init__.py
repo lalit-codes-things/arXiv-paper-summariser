@@ -1,19 +1,19 @@
-"""Adaptive educational experience generation for arXiv papers (V13)."""
+"""V8 literature review generation platform."""
 
-from .concept_graph import ConceptGraphPipeline
-from .curriculum import CurriculumGenerator
-from .models import EducationMode, Paper, V13EducationalExperience
-from .platform import V13Platform
-from .tutoring import AdaptiveTutoringEngine
+from .citations import CitationFormatter
+from .clustering import ClusteringPipeline
+from .engine import LiteratureSynthesisEngine
+from .models import Paper, Review, ReviewConfig
+from .workflows import ReviewGenerationWorkflow
 
 __all__ = [
-    "AdaptiveTutoringEngine",
-    "ConceptGraphPipeline",
-    "CurriculumGenerator",
-    "EducationMode",
+    "CitationFormatter",
+    "ClusteringPipeline",
+    "LiteratureSynthesisEngine",
     "Paper",
-    "V13Platform",
-    "V13EducationalExperience",
+    "Review",
+    "ReviewConfig",
+    "ReviewGenerationWorkflow",
 ]
 
-__version__ = "13.0.0"
+__version__ = "8.0.0"
