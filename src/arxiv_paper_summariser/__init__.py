@@ -1,5 +1,19 @@
-"""Tools for turning arXiv papers into implementation assets."""
+"""V8 literature review generation platform."""
 
-__all__ = ["__version__"]
+from .citations import CitationFormatter
+from .clustering import ClusteringPipeline
+from .engine import LiteratureSynthesisEngine
+from .models import Paper, Review, ReviewConfig
+from .workflows import ReviewGenerationWorkflow
 
-__version__ = "9.0.0"
+__all__ = [
+    "CitationFormatter",
+    "ClusteringPipeline",
+    "LiteratureSynthesisEngine",
+    "Paper",
+    "Review",
+    "ReviewConfig",
+    "ReviewGenerationWorkflow",
+]
+
+__version__ = "8.0.0"
