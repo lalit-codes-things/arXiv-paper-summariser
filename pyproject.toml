@@ -3,26 +3,20 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "arxiv-research-copilot"
-version = "0.2.0"
-description = "Structured arXiv research copilot with chunking, enrichment, and typed summaries"
-readme = "README.md"
+name = "arxiv-paper-summariser"
+version = "15.0.0"
+description = "V15 research simulation and experiment planning toolkit for arXiv summarisation systems."
 requires-python = ">=3.10"
-authors = [{ name = "Arxiv Research Copilot Contributors" }]
-dependencies = []
-
-[project.optional-dependencies]
-llm = ["openai>=1.0.0"]
-pdf = ["pypdf>=4.0.0"]
-http = ["requests>=2.31.0"]
-dev = ["pytest>=8.0.0"]
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "arXiv Paper Summariser Maintainers"}]
 
 [project.scripts]
-arxiv-copilot = "arxiv_copilot.cli:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
+arxiv-v15-simulate = "arxiv_paper_summariser_v15.cli:main"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+addopts = "-q"
 testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["arxiv_paper_summariser_v15*"]
