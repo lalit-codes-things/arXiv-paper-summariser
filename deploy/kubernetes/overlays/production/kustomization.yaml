@@ -1,0 +1,18 @@
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Deployment
+      name: arxiv-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+  - target:
+      kind: Deployment
+      name: arxiv-worker
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4

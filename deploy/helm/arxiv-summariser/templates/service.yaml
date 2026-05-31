@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: arxiv-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "arxiv.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/component: api
+    app.kubernetes.io/name: {{ include "arxiv.name" . }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

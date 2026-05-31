@@ -1,0 +1,69 @@
+name: V17 Enterprise CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate manifests and IaC
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: azure/setup-helm@v4
+      - name: Terraform fmt
+        run: terraform -chdir=infra/terraform fmt -check -recursive
+      - name: Terraform init
+        run: terraform -chdir=infra/terraform init -backend=false
+      - name: Terraform validate
+        run: terraform -chdir=infra/terraform validate
+      - name: Helm lint
+        run: helm lint deploy/helm/arxiv-summariser
+      - name: Render Helm chart
+        run: scripts/deploy.sh plan > rendered.yaml
+
+  security:
+    name: Security and policy checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+      - name: Validate Kubernetes policy bundle
+        run: |
+          test -f policies/gatekeeper-requirements.yaml
+          test -f compliance/audit-event-schema.json
+
+  deploy-staging:
+    name: Deploy staging
+    needs: [validate, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy with Helm
+        run: scripts/deploy.sh deploy
+
+  deploy-production:
+    name: Deploy production
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy with Helm
+        run: scripts/deploy.sh deploy
