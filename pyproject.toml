@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-paper-summariser"
+version = "13.0.0"
+description = "V13 adaptive educational experiences for arXiv papers."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "arXiv Paper Summariser Maintainers" }]
+license = { text = "MIT" }
+keywords = ["arxiv", "education", "tutoring", "curriculum", "concept-graphs"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
