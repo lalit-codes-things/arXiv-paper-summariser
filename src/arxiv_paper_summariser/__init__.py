@@ -1,19 +1,6 @@
-"""V8 literature review generation platform."""
+"""V16 multimodal research-paper understanding platform."""
 
-from .citations import CitationFormatter
-from .clustering import ClusteringPipeline
-from .engine import LiteratureSynthesisEngine
-from .models import Paper, Review, ReviewConfig
-from .workflows import ReviewGenerationWorkflow
+from .platform_v16 import V16PaperUnderstandingPlatform, build_v16_platform
 
-__all__ = [
-    "CitationFormatter",
-    "ClusteringPipeline",
-    "LiteratureSynthesisEngine",
-    "Paper",
-    "Review",
-    "ReviewConfig",
-    "ReviewGenerationWorkflow",
-]
-
-__version__ = "8.0.0"
+__all__ = ["V16PaperUnderstandingPlatform", "build_v16_platform"]
+__version__ = "16.0.0"

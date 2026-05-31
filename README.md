@@ -1,141 +1,53 @@
-# Arxiv Research Copilot
+# arXiv-paper-summariser
 
-Arxiv Research Copilot turns arXiv papers into structured research notes. V2 extends the original summarizer without changing the core flow: fetch arXiv metadata, download PDFs, extract text, summarize with an LLM, sync optional destinations, and store local JSON.
+V16 upgrades the project from text-only paper summarisation into a multimodal research-paper understanding platform.
+The goal is to deeply understand every modality commonly embedded in papers and supplementary material.
 
-## V2 capabilities
+## V16 multimodal capabilities
 
-- **Structured JSON summaries** with typed fields for TL;DR, ELI5, technical summary, methodology, datasets, metrics, contributions, limitations, future work, flashcards, and suggested reading.
-- **Long-paper chunking** that tries to preserve section boundaries, avoids token overflow, and merges chunk-level summaries.
-- **Retry and resilience** through exponential backoff, request timeouts, and logging.
-- **Better prompts** for chunk summaries, merged summaries, and single-paper summaries.
-- **Citation extraction** from references and bibliography sections.
-- **Semantic Scholar enrichment** for citation counts, influential citations, related papers, and author metadata.
-- **Multi-level summaries** for quick reading, beginner explanations, and technical review.
-- **Flashcard generation** for Q/A, concept, and implementation cards.
-- **Related paper suggestions** from the LLM output and Semantic Scholar recommendations.
-- **Batch processing** for multiple arXiv IDs, category feeds, and newest `cs.AI` papers.
+- **Figure understanding** combines captions, OCR text, and detected visual entities to explain scientific figures.
+- **Chart reasoning** consumes extracted chart series and axis metadata to produce trend, range, and comparative observations.
+- **Equation interpretation** converts LaTeX, MathML, OCR text, or equation metadata into variable/operator inventories and natural-language reasoning steps.
+- **Architecture diagram parsing** transforms system diagrams into components, directed edges, and data/control-flow explanations.
+- **Table extraction** normalizes headers, rows, and cell-level facts for downstream summarisation.
+- **Video understanding** uses transcripts, frame annotations, and temporal events from supplementary videos.
+- **OCR pipelines** provide shared text recognition, cleanup, and structural token extraction for all visual modalities.
 
-## Repository structure
+## Generated V16 systems
 
-```text
-.
-├── README.md
-├── pyproject.toml
-├── src/
-│   └── arxiv_copilot/
-│       ├── __init__.py
-│       ├── arxiv.py
-│       ├── citations.py
-│       ├── cli.py
-│       ├── flashcards.py
-│       ├── llm.py
-│       ├── notion.py
-│       ├── pdf.py
-│       ├── pipeline.py
-│       ├── prompts.py
-│       ├── schemas.py
-│       ├── storage.py
-│       ├── chunking/
-│       │   ├── __init__.py
-│       │   └── chunker.py
-│       ├── enrich/
-│       │   ├── __init__.py
-│       │   └── semantic_scholar.py
-│       └── utils/
-│           ├── __init__.py
-│           ├── http.py
-│           ├── logging.py
-│           └── retry.py
-└── tests/
-    ├── test_chunking.py
-    ├── test_citations_retry.py
-    ├── test_pipeline.py
-    └── test_schemas_and_llm.py
-```
+The platform is intentionally modular so production extractors can be attached without changing orchestration code:
 
-## Installation
+| System | Module | Purpose |
+| --- | --- | --- |
+| Multimodal parsers | `arxiv_paper_summariser.parsers` | Figures, charts, tables, and video supplements |
+| OCR pipelines | `arxiv_paper_summariser.ocr` | Text recognition, normalization, token extraction |
+| Equation reasoning workflows | `arxiv_paper_summariser.equations` | Symbolic expression interpretation |
+| Diagram analysis systems | `arxiv_paper_summariser.diagrams` | Architecture graph parsing and flow analysis |
+| V16 orchestration | `arxiv_paper_summariser.platform_v16` | Modality routing and multimodal Markdown summaries |
 
-```bash
-python -m pip install -e .
-```
-
-Optional extras:
-
-```bash
-python -m pip install -e '.[pdf,llm,dev]'
-```
-
-- `pdf` installs `pypdf` for PDF text extraction.
-- `llm` installs the OpenAI SDK for real LLM summaries.
-- `dev` installs pytest.
-
-## CLI usage
-
-Process one or more arXiv IDs:
-
-```bash
-arxiv-copilot --arxiv-id 1706.03762 --arxiv-id 1810.04805
-```
-
-Process newest papers in a category:
-
-```bash
-arxiv-copilot --category cs.CL --max-results 5
-```
-
-Process newest AI papers:
-
-```bash
-arxiv-copilot --newest-ai --max-results 10
-```
-
-Use abstracts only and disable Semantic Scholar enrichment:
-
-```bash
-arxiv-copilot --arxiv-id 1706.03762 --no-pdf --no-semantic-scholar
-```
-
-## Python usage
+## Quick start
 
 ```python
-from arxiv_copilot.pipeline import default_pipeline
+from arxiv_paper_summariser import build_v16_platform
+from arxiv_paper_summariser.modalities import Modality, PaperAsset
 
-pipeline = default_pipeline("data")
-pipeline.config.download_pdfs = False
-result = pipeline.process_arxiv_id("1706.03762")
-print(result.summary.tl_dr)
+platform = build_v16_platform()
+assets = [
+    PaperAsset(
+        asset_id="eq-1",
+        modality=Modality.EQUATION,
+        source="paper.pdf",
+        metadata={"latex": "y = mx + b"},
+    )
+]
+
+print(platform.multimodal_summary(assets))
 ```
 
-## Structured output schema
+## Development
 
-Every summary is represented by `StructuredSummary` and serialized as JSON:
-
-```json
-{
-  "tl_dr": "...",
-  "eli5": "...",
-  "technical_summary": "...",
-  "methodology": ["..."],
-  "datasets": ["..."],
-  "metrics": ["..."],
-  "contributions": ["..."],
-  "limitations": ["..."],
-  "future_work": ["..."],
-  "flashcards": [
-    {"question": "...", "answer": "...", "kind": "qa", "source_section": "..."}
-  ],
-  "suggested_reading": [
-    {"title": "...", "reason": "...", "arxiv_id": "...", "url": "...", "citation_count": 0}
-  ]
-}
-```
-
-## Notes on providers
-
-The package ships with a deterministic `HeuristicLLMClient` for tests and offline development. Use `OpenAIJSONClient` when you want real model output. Semantic Scholar enrichment uses the public Graph API and accepts an optional API key through `SemanticScholarClient(api_key="...")`.
-
-## Testing
+Run the test suite with:
 
 ```bash
-pytest
+PYTHONPATH=src python -m unittest discover -s tests
 ```

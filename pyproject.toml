@@ -4,19 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arxiv-paper-summariser"
-version = "15.0.0"
-description = "V15 research simulation and experiment planning toolkit for arXiv summarisation systems."
-requires-python = ">=3.10"
+version = "16.0.0"
+description = "V16 multimodal research-paper understanding platform."
 readme = "README.md"
-license = {text = "MIT"}
-authors = [{name = "arXiv Paper Summariser Maintainers"}]
-
-[project.scripts]
-arxiv-v15-simulate = "arxiv_paper_summariser_v15.cli:main"
-
-[tool.pytest.ini_options]
-addopts = "-q"
-testpaths = ["tests"]
+requires-python = ">=3.10"
+authors = [{ name = "arXiv Paper Summariser" }]
+license = { text = "MIT" }
+keywords = ["arxiv", "papers", "multimodal", "ocr", "equations", "diagrams"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
 
 [tool.setuptools.packages.find]
-include = ["arxiv_paper_summariser_v15*"]
+where = ["src"]
