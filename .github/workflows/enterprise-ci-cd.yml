@@ -15,9 +15,9 @@ jobs:
     name: Validate manifests and IaC
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v4
+      - uses: azure/setup-helm@v5
       - name: Terraform fmt
         run: terraform -chdir=infra/terraform fmt -check -recursive
       - name: Terraform init
@@ -33,9 +33,9 @@ jobs:
     name: Security and policy checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -53,7 +53,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: staging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Deploy with Helm
         run: scripts/deploy.sh deploy
 
@@ -64,6 +64,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Deploy with Helm
         run: scripts/deploy.sh deploy
