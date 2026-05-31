@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: arxiv-copilot-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['backend:8000']
+  - job_name: arxiv-copilot-frontend
+    static_configs:
+      - targets: ['frontend:3000']
