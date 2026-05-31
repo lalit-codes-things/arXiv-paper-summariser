@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: arxiv_copilot
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  qdrant:
+    image: qdrant/qdrant:v1.9.0
+    ports: ["6333:6333"]
+    volumes: [qdrant_data:/qdrant/storage]
+
+  v3-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.v3
+    env_file: .env
+    ports: ["8000:8000"]
+    depends_on: [postgres, redis, qdrant]
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    volumes: [.:/app]
+
+  v5-api:
+    build:
+      context: apps/backend
+    env_file: .env
+    ports: ["8001:8000"]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: apps/frontend
+      dockerfile: Dockerfile.dev
+    ports: ["3000:3000"]
+    env_file: apps/frontend/.env.local
+    volumes: [./apps/frontend:/app]
+    depends_on: [v3-api, v5-api]
+
+volumes:
+  postgres_data:
+  qdrant_data:

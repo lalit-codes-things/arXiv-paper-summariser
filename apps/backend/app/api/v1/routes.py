@@ -1,7 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, current_user, require_roles
 from app.models.schemas import Annotation, ChatRequest, ChatResponse, LoginRequest, Paper, Role, TokenResponse, User
 from app.services.chat import answer_paper_question
@@ -59,7 +60,8 @@ def graph() -> dict:
 
 
 @router.post("/papers/{paper_id}/chat", response_model=ChatResponse, tags=["ai"])
-def paper_chat(paper_id: str, payload: ChatRequest, _: Annotated[User, Depends(current_user)]) -> ChatResponse:
+@limiter.limit("10/minute")
+def paper_chat(request: Request, paper_id: str, payload: ChatRequest, _: Annotated[User, Depends(current_user)]) -> ChatResponse:
     paper = find_paper(paper_id)
     if paper is None:
         raise HTTPException(status_code=404, detail="Paper not found")
