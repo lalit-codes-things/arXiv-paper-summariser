@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    {{- include "arxiv.labels" . | nindent 4 }}
+    platform.arxiv.ai/tier: control-plane
+{{- range .Values.tenants }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .namespace }}
+  labels:
+    tenant.arxiv.ai/name: {{ .name | quote }}
+    platform.arxiv.ai/tier: data-plane
+{{- end }}

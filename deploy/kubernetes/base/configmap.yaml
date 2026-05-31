@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: arxiv-platform-config
+  namespace: arxiv-platform
+data:
+  PLATFORM_VERSION: "v17"
+  TENANCY_MODE: "namespace-per-tenant"
+  AUDIT_LOG_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.monitoring:4317"
+  SSO_PROVIDER: "oidc"

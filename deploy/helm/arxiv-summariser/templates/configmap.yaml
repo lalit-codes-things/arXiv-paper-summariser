@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: arxiv-platform-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "arxiv.labels" . | nindent 4 }}
+data:
+  PLATFORM_VERSION: {{ .Values.global.platformVersion | quote }}
+  TENANCY_MODE: {{ .Values.global.tenancyMode | quote }}
+  AUDIT_LOG_ENABLED: {{ .Values.audit.enabled | quote }}
+  AUDIT_LOG_SINK: {{ .Values.audit.sink | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.observability.otelEndpoint | quote }}
+  SSO_PROVIDER: {{ .Values.sso.provider | quote }}
+  SSO_ISSUER_URL: {{ .Values.sso.issuerUrl | quote }}
+  SSO_GROUP_CLAIM: {{ .Values.sso.groupClaim | quote }}

@@ -1,0 +1,29 @@
+{{- range .Values.tenants }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tenant-quota
+  namespace: {{ .namespace }}
+spec:
+  hard:
+    requests.cpu: {{ .cpuQuota | quote }}
+    requests.memory: {{ .memoryQuota | quote }}
+    limits.cpu: {{ .cpuQuota | quote }}
+    limits.memory: {{ .memoryQuota | quote }}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tenant-defaults
+  namespace: {{ .namespace }}
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi
+      default:
+        cpu: 500m
+        memory: 1Gi
+---
+{{- end }}

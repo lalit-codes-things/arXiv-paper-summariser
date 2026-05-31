@@ -1,0 +1,6 @@
+apiVersion: v2
+name: arxiv-summariser
+version: 17.0.0
+description: Enterprise deployment stack for the V17 arXiv Paper Summariser platform
+type: application
+appVersion: "v17"
