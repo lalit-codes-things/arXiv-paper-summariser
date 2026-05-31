@@ -1,0 +1,38 @@
+groups:
+  - name: arxiv-platform-v17
+    rules:
+      - alert: ApiHighErrorRate
+        expr: sum(rate(http_requests_total{component="api",status=~"5.."}[5m])) / sum(rate(http_requests_total{component="api"}[5m])) > 0.02
+        for: 10m
+        labels:
+          severity: page
+          service: arxiv-api
+        annotations:
+          summary: API 5xx rate is above 2% for 10 minutes.
+          runbook_url: docs/enterprise/OPERATIONS.md#api-error-budget-burn
+      - alert: WorkerQueueBacklogHigh
+        expr: arxiv_queue_depth{queue="summarisation-jobs"} > 1000
+        for: 15m
+        labels:
+          severity: ticket
+          service: arxiv-worker
+        annotations:
+          summary: Summarisation queue backlog exceeds 1000 jobs.
+          runbook_url: docs/enterprise/OPERATIONS.md#queue-backlog
+      - alert: AuditLogDeliveryLagHigh
+        expr: arxiv_audit_delivery_lag_seconds > 300
+        for: 5m
+        labels:
+          severity: page
+          service: audit-log
+        annotations:
+          summary: Audit events are more than five minutes behind.
+          runbook_url: docs/enterprise/OPERATIONS.md#audit-delivery-lag
+      - alert: TenantQuotaPressure
+        expr: tenant_resource_quota_used_percent > 85
+        for: 30m
+        labels:
+          severity: ticket
+          service: tenancy
+        annotations:
+          summary: Tenant quota pressure is above 85%.

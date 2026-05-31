@@ -1,0 +1,12 @@
+{
+  "title": "arXiv Summariser V17 Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "tags": ["arxiv", "v17", "enterprise"],
+  "panels": [
+    {"type": "timeseries", "title": "API Request Rate", "targets": [{"expr": "sum(rate(http_requests_total{component=\"api\"}[5m])) by (tenant)"}]},
+    {"type": "timeseries", "title": "API Error Rate", "targets": [{"expr": "sum(rate(http_requests_total{component=\"api\",status=~\"5..\"}[5m])) by (tenant)"}]},
+    {"type": "timeseries", "title": "Worker Queue Depth", "targets": [{"expr": "arxiv_queue_depth{queue=\"summarisation-jobs\"}"}]},
+    {"type": "timeseries", "title": "Audit Delivery Lag", "targets": [{"expr": "arxiv_audit_delivery_lag_seconds"}]}
+  ]
+}

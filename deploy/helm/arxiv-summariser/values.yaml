@@ -1,0 +1,69 @@
+global:
+  platformVersion: v17
+  tenancyMode: namespace-per-tenant
+  imageRegistry: ghcr.io/example
+
+sso:
+  enabled: true
+  provider: oidc
+  issuerUrl: https://idp.example.com/oauth2/default
+  clientId: arxiv-summariser
+  groupClaim: groups
+  roleMappings:
+    platform-admin: arxiv-platform-admins
+    tenant-admin: arxiv-tenant-admins
+    researcher: arxiv-researchers
+    auditor: arxiv-auditors
+
+audit:
+  enabled: true
+  sink: otlp
+  retentionDays: 2555
+  immutableStorage: true
+
+api:
+  image: arxiv-paper-summariser-api:v17
+  replicas: 3
+  minReplicas: 3
+  maxReplicas: 20
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+worker:
+  image: arxiv-paper-summariser-worker:v17
+  replicas: 2
+  minReplicas: 2
+  maxReplicas: 50
+  queueName: summarisation-jobs
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+ingress:
+  enabled: true
+  host: arxiv.example.com
+  className: nginx
+  tlsSecretName: arxiv-summariser-tls
+
+observability:
+  otelEndpoint: http://otel-collector.monitoring:4317
+  prometheusScrape: true
+
+tenants:
+  - name: research
+    namespace: tenant-research
+    cpuQuota: "20"
+    memoryQuota: 80Gi
+  - name: audit
+    namespace: tenant-audit
+    cpuQuota: "4"
+    memoryQuota: 16Gi

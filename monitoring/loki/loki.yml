@@ -1,0 +1,19 @@
+auth_enabled: true
+server:
+  http_listen_port: 3100
+common:
+  path_prefix: /loki
+  replication_factor: 1
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: arxiv_v17_
+        period: 24h
+limits_config:
+  retention_period: 2555d
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h

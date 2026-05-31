@@ -1,0 +1,10 @@
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - deployment-api.yaml
+  - deployment-worker.yaml
+  - service.yaml
+  - rbac.yaml
+  - network-policy.yaml
+  - hpa.yaml
+  - keda-worker-scaler.yaml

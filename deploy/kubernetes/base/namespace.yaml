@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arxiv-platform
+  labels:
+    app.kubernetes.io/part-of: arxiv-summariser
+    platform.arxiv.ai/tier: control-plane

@@ -1,53 +1,60 @@
-# arXiv-paper-summariser
+# arXiv Paper Summariser — V17 Enterprise Platform
 
-V16 upgrades the project from text-only paper summarisation into a multimodal research-paper understanding platform.
-The goal is to deeply understand every modality commonly embedded in papers and supplementary material.
+V17 upgrades the project from a single research utility into an enterprise-grade AI research infrastructure blueprint for regulated, multi-tenant deployments.
 
-## V16 multimodal capabilities
+## V17 capabilities
 
-- **Figure understanding** combines captions, OCR text, and detected visual entities to explain scientific figures.
-- **Chart reasoning** consumes extracted chart series and axis metadata to produce trend, range, and comparative observations.
-- **Equation interpretation** converts LaTeX, MathML, OCR text, or equation metadata into variable/operator inventories and natural-language reasoning steps.
-- **Architecture diagram parsing** transforms system diagrams into components, directed edges, and data/control-flow explanations.
-- **Table extraction** normalizes headers, rows, and cell-level facts for downstream summarisation.
-- **Video understanding** uses transcripts, frame annotations, and temporal events from supplementary videos.
-- **OCR pipelines** provide shared text recognition, cleanup, and structural token extraction for all visual modalities.
+- **Multi-tenant architecture** with namespace isolation, per-tenant network policies, quotas, and database tenancy guidance.
+- **Audit logging** for authentication, authorization, paper ingestion, summarisation requests, model access, data export, and administrative changes.
+- **Observability** using OpenTelemetry, Prometheus, Grafana, Loki, Alertmanager, and SLO-oriented alerts.
+- **Monitoring** for API latency, error budgets, model-provider failures, queue health, cost controls, and Kubernetes saturation.
+- **Kubernetes deployment** manifests and a Helm chart for API, worker, web, ingress, policies, and secrets integration.
+- **CI/CD** with lint, security scanning, container build, IaC validation, and deployment gates.
+- **Autoscaling** with HPA and KEDA examples for HTTP and queue-driven workloads.
+- **SSO** via OIDC/SAML-ready configuration and group-to-role mapping.
+- **Compliance features** covering retention, encryption, data classification, access reviews, evidence collection, and policy-as-code.
 
-## Generated V16 systems
+## Repository layout
 
-The platform is intentionally modular so production extractors can be attached without changing orchestration code:
-
-| System | Module | Purpose |
-| --- | --- | --- |
-| Multimodal parsers | `arxiv_paper_summariser.parsers` | Figures, charts, tables, and video supplements |
-| OCR pipelines | `arxiv_paper_summariser.ocr` | Text recognition, normalization, token extraction |
-| Equation reasoning workflows | `arxiv_paper_summariser.equations` | Symbolic expression interpretation |
-| Diagram analysis systems | `arxiv_paper_summariser.diagrams` | Architecture graph parsing and flow analysis |
-| V16 orchestration | `arxiv_paper_summariser.platform_v16` | Modality routing and multimodal Markdown summaries |
+```text
+.github/workflows/         CI/CD pipeline definitions
+compliance/                Compliance controls, evidence, and audit event schema
+deploy/helm/               Enterprise Helm deployment stack
+deploy/kubernetes/         Kustomize-ready Kubernetes manifests
+infra/terraform/           Infrastructure-as-code for AWS EKS reference deployment
+monitoring/                Prometheus, Alertmanager, Grafana, Loki, and OTel config
+policies/                  OPA Gatekeeper policies and constraint examples
+scripts/                   Production operations tooling
+```
 
 ## Quick start
 
-```python
-from arxiv_paper_summariser import build_v16_platform
-from arxiv_paper_summariser.modalities import Modality, PaperAsset
+1. Review the target architecture in [`docs/enterprise/V17_ARCHITECTURE.md`](docs/enterprise/V17_ARCHITECTURE.md).
+2. Configure infrastructure variables in [`infra/terraform/variables.tf`](infra/terraform/variables.tf).
+3. Plan the reference deployment:
 
-platform = build_v16_platform()
-assets = [
-    PaperAsset(
-        asset_id="eq-1",
-        modality=Modality.EQUATION,
-        source="paper.pdf",
-        metadata={"latex": "y = mx + b"},
-    )
-]
+   ```bash
+   cd infra/terraform
+   terraform init
+   terraform plan -var='cluster_name=arxiv-v17-prod'
+   ```
 
-print(platform.multimodal_summary(assets))
-```
+4. Deploy application resources with Helm:
 
-## Development
+   ```bash
+   helm upgrade --install arxiv-summariser deploy/helm/arxiv-summariser \
+     --namespace arxiv-prod --create-namespace \
+     --values deploy/helm/arxiv-summariser/values.yaml
+   ```
 
-Run the test suite with:
+5. Enable monitoring by applying the monitoring stack in [`monitoring/`](monitoring/).
 
-```bash
-PYTHONPATH=src python -m unittest discover -s tests
-```
+## Operational model
+
+V17 assumes production operation by a platform team with separation of duties:
+
+- **Platform admins** manage clusters, IaC, ingress, secrets, observability, and policies.
+- **Tenant admins** manage users, groups, quotas, and data retention inside assigned tenants.
+- **Researchers** access papers, run summarisation workflows, and export approved outputs.
+- **Auditors** receive read-only access to evidence bundles, audit logs, and compliance reports.
+
