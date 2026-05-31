@@ -1,87 +1,141 @@
-# arXiv Paper Summariser — V15 Research Simulation Platform
+# Arxiv Research Copilot
 
-V15 upgrades this repository from a placeholder into a pre-implementation research
-simulation toolkit. The platform helps teams estimate likely experiment outcomes
-before committing engineering effort or cloud budget.
+Arxiv Research Copilot turns arXiv papers into structured research notes. V2 extends the original summarizer without changing the core flow: fetch arXiv metadata, download PDFs, extract text, summarize with an LLM, sync optional destinations, and store local JSON.
 
-## V15 capabilities
+## V2 capabilities
 
-- **Architecture simulation**: score candidate summarisation architectures for
-  expected quality, implementation risk, complexity, and throughput.
-- **Experiment estimation**: estimate GPU hours, cloud spend, engineering effort,
-  storage cost, and confidence for planned research runs.
-- **Compute cost prediction**: model GPU pricing across common accelerator types
-  and include engineering review effort in total cost.
-- **Ablation simulation**: predict component-level impact for retrieval,
-  reranking, compression, long-context, distillation, and citation-grounding work.
-- **Expected benchmark prediction**: forecast ROUGE-L, faithfulness, citation F1,
-  and latency with confidence intervals.
-- **Experiment planning workflows**: turn simulation outputs into acceptance gates,
-  fallback plans, and an implementation backlog.
+- **Structured JSON summaries** with typed fields for TL;DR, ELI5, technical summary, methodology, datasets, metrics, contributions, limitations, future work, flashcards, and suggested reading.
+- **Long-paper chunking** that tries to preserve section boundaries, avoids token overflow, and merges chunk-level summaries.
+- **Retry and resilience** through exponential backoff, request timeouts, and logging.
+- **Better prompts** for chunk summaries, merged summaries, and single-paper summaries.
+- **Citation extraction** from references and bibliography sections.
+- **Semantic Scholar enrichment** for citation counts, influential citations, related papers, and author metadata.
+- **Multi-level summaries** for quick reading, beginner explanations, and technical review.
+- **Flashcard generation** for Q/A, concept, and implementation cards.
+- **Related paper suggestions** from the LLM output and Semantic Scholar recommendations.
+- **Batch processing** for multiple arXiv IDs, category feeds, and newest `cs.AI` papers.
 
-## Quick start
+## Repository structure
 
-```bash
-python -m arxiv_paper_summariser_v15.cli
+```text
+.
+├── README.md
+├── pyproject.toml
+├── src/
+│   └── arxiv_copilot/
+│       ├── __init__.py
+│       ├── arxiv.py
+│       ├── citations.py
+│       ├── cli.py
+│       ├── flashcards.py
+│       ├── llm.py
+│       ├── notion.py
+│       ├── pdf.py
+│       ├── pipeline.py
+│       ├── prompts.py
+│       ├── schemas.py
+│       ├── storage.py
+│       ├── chunking/
+│       │   ├── __init__.py
+│       │   └── chunker.py
+│       ├── enrich/
+│       │   ├── __init__.py
+│       │   └── semantic_scholar.py
+│       └── utils/
+│           ├── __init__.py
+│           ├── http.py
+│           ├── logging.py
+│           └── retry.py
+└── tests/
+    ├── test_chunking.py
+    ├── test_citations_retry.py
+    ├── test_pipeline.py
+    └── test_schemas_and_llm.py
 ```
 
-or, after installation:
+## Installation
 
 ```bash
-arxiv-v15-simulate
+python -m pip install -e .
 ```
 
-## Example
+Optional extras:
+
+```bash
+python -m pip install -e '.[pdf,llm,dev]'
+```
+
+- `pdf` installs `pypdf` for PDF text extraction.
+- `llm` installs the OpenAI SDK for real LLM summaries.
+- `dev` installs pytest.
+
+## CLI usage
+
+Process one or more arXiv IDs:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --arxiv-id 1810.04805
+```
+
+Process newest papers in a category:
+
+```bash
+arxiv-copilot --category cs.CL --max-results 5
+```
+
+Process newest AI papers:
+
+```bash
+arxiv-copilot --newest-ai --max-results 10
+```
+
+Use abstracts only and disable Semantic Scholar enrichment:
+
+```bash
+arxiv-copilot --arxiv-id 1706.03762 --no-pdf --no-semantic-scholar
+```
+
+## Python usage
 
 ```python
-from arxiv_paper_summariser_v15 import (
-    ArchitectureSpec,
-    ExperimentPlanningWorkflow,
-    ExperimentSpec,
-)
+from arxiv_copilot.pipeline import default_pipeline
 
-architectures = [
-    ArchitectureSpec(
-        name="retrieval-grounded-transformer",
-        encoder_layers=12,
-        decoder_layers=12,
-        hidden_size=768,
-        retrieval_depth=8,
-        context_window=16_384,
-    )
-]
-experiment = ExperimentSpec(
-    name="v15-preimplementation-study",
-    dataset_size=120_000,
-    training_steps=12_000,
-    evaluation_samples=5_000,
-)
-
-plan = ExperimentPlanningWorkflow().generate_plan(
-    objective="Predict research outcomes before implementation.",
-    architectures=architectures,
-    experiment=experiment,
-)
-
-print(plan.selected_candidate.recommendation)
+pipeline = default_pipeline("data")
+pipeline.config.download_pdfs = False
+result = pipeline.process_arxiv_id("1706.03762")
+print(result.summary.tl_dr)
 ```
 
-## Module map
+## Structured output schema
 
-- `arxiv_paper_summariser_v15.simulation_engine` contains the simulation engine,
-  architecture specifications, experiment specifications, compute profiles, and
-  simulation result model.
-- `arxiv_paper_summariser_v15.benchmark_prediction` converts simulation results
-  into benchmark confidence intervals, baseline deltas, rankings, and portfolio
-  summaries.
-- `arxiv_paper_summariser_v15.workflows` generates experiment plans with research
-  steps, acceptance gates, fallback plans, and implementation backlog items.
-- `arxiv_paper_summariser_v15.cli` runs a default V15 simulation workflow and
-  emits JSON for automation.
+Every summary is represented by `StructuredSummary` and serialized as JSON:
 
-## Development
+```json
+{
+  "tl_dr": "...",
+  "eli5": "...",
+  "technical_summary": "...",
+  "methodology": ["..."],
+  "datasets": ["..."],
+  "metrics": ["..."],
+  "contributions": ["..."],
+  "limitations": ["..."],
+  "future_work": ["..."],
+  "flashcards": [
+    {"question": "...", "answer": "...", "kind": "qa", "source_section": "..."}
+  ],
+  "suggested_reading": [
+    {"title": "...", "reason": "...", "arxiv_id": "...", "url": "...", "citation_count": 0}
+  ]
+}
+```
+
+## Notes on providers
+
+The package ships with a deterministic `HeuristicLLMClient` for tests and offline development. Use `OpenAIJSONClient` when you want real model output. Semantic Scholar enrichment uses the public Graph API and accepts an optional API key through `SemanticScholarClient(api_key="...")`.
+
+## Testing
 
 ```bash
-python -m pytest
-python -m arxiv_paper_summariser_v15.cli
+pytest
 ```
