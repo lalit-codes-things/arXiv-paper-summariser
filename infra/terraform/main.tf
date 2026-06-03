@@ -29,16 +29,16 @@ module "postgres" {
   source       = "./modules/postgres"
   cluster_name = var.cluster_name
   environment  = var.environment
-  subnet_ids    = module.networking.private_subnet_ids
-  vpc_id        = module.networking.vpc_id
+  subnet_ids   = module.networking.private_subnet_ids
+  vpc_id       = module.networking.vpc_id
 }
 
 module "redis" {
   source       = "./modules/redis"
   cluster_name = var.cluster_name
   environment  = var.environment
-  subnet_ids    = module.networking.private_subnet_ids
-  vpc_id        = module.networking.vpc_id
+  subnet_ids   = module.networking.private_subnet_ids
+  vpc_id       = module.networking.vpc_id
 }
 
 module "observability" {

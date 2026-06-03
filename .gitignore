@@ -7,3 +7,6 @@ data/
 *.egg-info/
 dist/
 build/
+node_modules/
+.next/
+out/
