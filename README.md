@@ -822,7 +822,6 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-Built by Lalit with the help of his creativity and help from LLMs
+Built by Lalit.
 ```
 
-This README is comprehensive, explains the project’s layered architecture, includes mermaid flowcharts, and serves as both user guide and developer reference. You can place it as `README.md` in the project root.
