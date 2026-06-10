@@ -1,4 +1,4 @@
-
+#ArXiv-Paper-Summariser
 
 ```markdown
 # arXiv Paper Summariser — AI-Native Research Platform
@@ -93,7 +93,7 @@ flowchart TB
     V3 & Worker --> S3
 ```
 
-
+### Data Flow for a Typical User Action
 
 ```mermaid
 sequenceDiagram
