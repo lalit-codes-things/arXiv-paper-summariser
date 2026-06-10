@@ -1,4 +1,4 @@
-I'll create the most detailed README for your project, covering all versions, architecture, deployment, and features with flowcharts.
+
 
 ```markdown
 # arXiv Paper Summariser — AI-Native Research Platform
