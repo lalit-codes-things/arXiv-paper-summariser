@@ -404,7 +404,376 @@ pytest tests/test_v7_collaboration.py
 - TypeScript: ESLint + Prettier (already configured in frontend)
 
 ---
+Here are all the flowcharts you need to fully explain your project, from high-level architecture down to specific workflows. Each is written in Mermaid syntax and ready to embed in your README or documentation.
 
+---
+
+## 1. High‑Level System Architecture
+
+Shows how users, APIs, workers, storage, AI providers, and external services interact.
+
+```mermaid
+flowchart TB
+    subgraph Clients
+        Web[Next.js Frontend<br/>Port 3000]
+        CLI[CLI / Scripts]
+    end
+
+    subgraph APIs
+        V3[V3 Research API<br/>Port 8000<br/>FastAPI]
+        V5[V5 Auth & Collaboration API<br/>Port 8001<br/>FastAPI]
+    end
+
+    subgraph Background
+        Worker[Background Workers<br/>APScheduler / KEDA]
+        Queue[Redis Queue]
+    end
+
+    subgraph Storage
+        PG[(PostgreSQL<br/>Papers, profiles, jobs)]
+        Qdrant[(Qdrant<br/>Vector index, 384d)]
+        S3[(S3 / Object Store<br/>PDFs, figures, exports)]
+    end
+
+    subgraph AI
+        Claude[Anthropic Claude<br/>Paper chat]
+        OpenAI[OpenAI‑compatible<br/>Summarisation]
+        ST[Sentence‑Transformers<br/>Embeddings]
+    end
+
+    subgraph External
+        Arxiv[arXiv API]
+        Scholar[Semantic Scholar]
+    end
+
+    Web --> V3 & V5
+    CLI --> V3
+    V3 --> PG & Qdrant & Queue
+    V5 --> PG
+    Worker --> Queue & PG & Qdrant & Claude & OpenAI
+    V3 --> ST & Arxiv & Scholar
+    V3 & Worker --> S3
+```
+
+---
+
+## 2. Data Flow for a Typical User Action (Search + Chat)
+
+Sequence diagram showing how a query becomes results and how a chat request is answered.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant V3_API
+    participant V5_API
+    participant DB
+    participant Qdrant
+    participant Claude
+
+    User->>Frontend: Search query
+    Frontend->>V3_API: GET /search?q=...
+    V3_API->>V3_API: Embed query
+    V3_API->>Qdrant: ANN search
+    Qdrant-->>V3_API: Top paper IDs
+    V3_API->>DB: Fetch paper details
+    DB-->>V3_API: Papers
+    V3_API-->>Frontend: Search results
+    Frontend-->>User: Display papers
+
+    User->>Frontend: Open paper & ask chat
+    Frontend->>V3_API: POST /chat/paper
+    V3_API->>DB: Get paper metadata
+    V3_API->>Claude: Prompt with abstract + question
+    Claude-->>V3_API: Answer
+    V3_API->>DB: Record memory event
+    V3_API-->>Frontend: Answer + citations
+    Frontend-->>User: AI response
+```
+
+---
+
+## 3. Version Evolution Ladder
+
+Shows how the project grew from V1 to V18, each layer building on the previous.
+
+```mermaid
+flowchart LR
+    V1[V1: Single‑paper pipeline] --> V2[V2: Structured summaries + flashcards]
+    V2 --> V3[V3: Research API, search, chat, memory]
+    V3 --> V4[V4: Autonomous agents, monitoring]
+    V4 --> V5[V5: Auth, workspaces, real‑time]
+    V5 --> V6[V6: Research OS (design)]
+    V6 --> V7[V7: Collaboration, CRDT sync]
+    V7 --> V8[V8: Literature review synthesis]
+    V8 --> V9[V9: Implementation workflow]
+    V9 --> V10[V10: Hypothesis & experiment]
+    V10 --> V11[V11: Personalised discovery]
+    V11 --> V12[V12: Knowledge graph]
+    V12 --> V13[V13: Adaptive tutoring]
+    V13 --> V14[V14: Publication workflows]
+    V14 --> V15[V15: Research simulation]
+    V15 --> V16[V16: Multimodal understanding]
+    V16 --> V17[V17: Enterprise deployment]
+    V17 --> V18[V18: Memory & orchestration]
+```
+
+---
+
+## 4. Paper Ingestion Pipeline
+
+From arXiv API to indexed, searchable paper.
+
+```mermaid
+flowchart LR
+    A[arXiv API] -->|Atom feed| B[Ingestion Service]
+    B --> C[Create Paper record]
+    C --> D[Extract & chunk text]
+    D --> E[Generate embeddings]
+    E --> F[Upsert to Qdrant]
+    F --> G[Save chunks to DB]
+    G --> H[Paper ready for search]
+```
+
+---
+
+## 5. Personalised Feed Generation (V11)
+
+How the system mixes subscription, trending, and knowledge‑gap lanes.
+
+```mermaid
+flowchart TB
+    User[User ID] --> Profile[(User Profile)]
+    Profile --> |interests, read papers, subscriptions| Ranker[Paper Ranker]
+    Papers[(Paper DB)] --> Ranker
+    Ranker --> |score = f(topic_match, freshness, popularity, subscriptions, knowledge_gap)| Ranked[Ranked Papers]
+    Ranked --> Interleaver[Lane Interleaver]
+    Interleaver --> |for_you, trending, subscriptions, continue_learning| Feed[Personalised Feed]
+```
+
+---
+
+## 6. AI Chat with a Paper
+
+How Claude (or fallback) answers questions grounded in paper metadata.
+
+```mermaid
+flowchart LR
+    User[User question] --> API[V3 Chat API]
+    API --> DB[(Paper DB)]
+    DB --> |title, abstract, authors, topics| PromptBuilder[Build system prompt]
+    PromptBuilder --> Claude[Anthropic Claude]
+    Claude --> |answer + citations| API
+    API --> User
+    API --> Memory[(Record memory event)]
+```
+
+---
+
+## 7. Research Simulation Workflow (V15)
+
+Predict outcomes before implementing a new architecture.
+
+```mermaid
+flowchart TB
+    Arch[ArchitectureSpec] --> Engine[SimulationEngine]
+    Exp[ExperimentSpec] --> Engine
+    Engine --> Quality[Expected quality score]
+    Engine --> Risk[Implementation risk]
+    Engine --> Cost[GPU hours & USD cost]
+    Engine --> Bench[Benchmark predictions<br/>ROUGE, faithfulness, latency]
+    Bench --> Predictor[BenchmarkPredictionSystem]
+    Predictor --> |confidence intervals| Plan[ExperimentPlan]
+    Plan --> Gates[Acceptance gates]
+    Gates --> Decision[Proceed / Revise / Pilot]
+```
+
+---
+
+## 8. Multimodal Understanding (V16)
+
+How a PDF asset (figure, equation, table) becomes a structured `UnderstandingResult`.
+
+```mermaid
+flowchart LR
+    Asset[PaperAsset] --> Router{modality}
+    Router -->|figure| Figure[FigureUnderstandingParser]
+    Router -->|equation| Equation[EquationReasoningWorkflow]
+    Router -->|table| Table[TableExtractionParser]
+    Router -->|chart| Chart[ChartReasoningParser]
+    Router -->|diagram| Diagram[ArchitectureDiagramParser]
+    Router -->|video| Video[VideoUnderstandingParser]
+
+    Figure --> OCR[OCR Pipeline]
+    Equation --> OCR
+    Table --> OCR
+    Chart --> OCR
+    Diagram --> OCR
+    Video --> OCR
+
+    OCR --> |text, tokens| Result[UnderstandingResult]
+    Figure --> Result
+    Equation --> Result
+    Table --> Result
+    Result --> Markdown[Markdown summary]
+```
+
+---
+
+## 9. Deployment Architecture (V17 – Kubernetes + Terraform)
+
+Shows how the platform runs in production with multi‑tenancy and observability.
+
+```mermaid
+flowchart TB
+    subgraph AWS
+        VPC[VPC]
+        EKS[EKS Cluster]
+        RDS[(RDS PostgreSQL<br/>Multi‑AZ)]
+        Elasticache[(ElastiCache Redis)]
+        S3_Buckets[S3: papers, audit]
+    end
+
+    subgraph Kubernetes
+        NS_Tenant1[Namespace: tenant-research]
+        NS_Tenant2[Namespace: tenant-audit]
+        NS_Platform[Namespace: arxiv-platform]
+        API[API Deployment<br/>HPA]
+        Worker[Worker Deployment<br/>KEDA]
+        Ingress[Ingress + cert-manager]
+        SSO[OIDC / SSO Proxy]
+    end
+
+    subgraph Observability
+        Prometheus[Prometheus]
+        Loki[Loki]
+        Tempo[Tempo]
+        Grafana[Grafana]
+        Alertmanager[Alertmanager]
+    end
+
+    Users --> Ingress
+    Ingress --> API & SSO
+    API --> RDS & Elasticache & S3_Buckets
+    Worker --> RDS & Elasticache & S3_Buckets
+    API & Worker --> Prometheus & Loki & Tempo
+    Prometheus --> Alertmanager
+    Alertmanager --> Slack[PagerDuty / Slack]
+```
+
+---
+
+## 10. Real‑Time Collaboration Sync (V7 – CRDT Engine)
+
+How concurrent edits are merged deterministically.
+
+```mermaid
+flowchart LR
+    Alice[Alice edits note] --> Op1[Operation INSERT at index 5]
+    Bob[Bob edits note] --> Op2[Operation DELETE range 2-4]
+    Op1 --> Merge[Merge Engine]
+    Op2 --> Merge
+    Merge --> |sort by (actor, counter)| Log[Append‑only operation log]
+    Log --> State[CRDT State]
+    State --> |materialise| Text[Converged document text]
+```
+
+---
+
+## 11. Knowledge Graph Traversal (V12)
+
+Example query: find papers that contradict a given paper.
+
+```mermaid
+flowchart LR
+    PaperA[Paper A] -->|CONTRADICTS| PaperB[Paper B]
+    PaperA -->|CITES| PaperC[Paper C]
+    PaperB -->|EVALUATED_ON| DatasetX[Dataset X]
+    PaperC -->|USES_METHOD| MethodY[Method Y]
+    MethodY -->|IMPROVES| BaselineZ[Baseline Z]
+
+    Query[Find papers that contradict Paper A] --> API[GraphTraversalAPI]
+    API --> |walk CONTRADICTS edges| Result[Paper B]
+```
+
+---
+
+## 12. Adaptive Tutoring Flow (V13)
+
+How a learner’s message changes the tutoring path.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Listen: Learner types message
+    Listen --> Classify: Check for confusion/mastery markers
+    Classify --> Confused: contains "confused", "don't understand"
+    Classify --> Mastery: contains "got it", "i know"
+    Classify --> Neutral: other
+    Confused --> Scaffold: Lower mastery score, give simpler explanation
+    Mastery --> Extend: Raise mastery score, give critique question
+    Neutral --> Socratic: Ask probing question
+    Scaffold --> Quiz: Offer low‑stakes quiz
+    Extend --> NextConcept: Advance to next milestone
+    Socratic --> Quiz: If mastery still low
+    Quiz --> Listen
+    NextConcept --> Listen
+```
+
+---
+
+## 13. Enterprise CI/CD Pipeline (GitHub Actions + Helm)
+
+How changes flow from commit to production.
+
+```mermaid
+flowchart LR
+    Push[git push to main] --> CI[CI workflow]
+    CI --> Lint[Lint + Terraform fmt]
+    CI --> Test[Run all tests]
+    CI --> Security[Trivy scan]
+    Security --> Build[Build containers]
+    Build --> Staging[Deploy to staging (Helm)]
+    Staging --> Smoke[Smoke tests]
+    Smoke --> Approval[Manual approval]
+    Approval --> Prod[Deploy to production (Helm)]
+    Prod --> Observability[Prometheus/Grafana monitoring]
+```
+
+---
+
+## 14. Background Worker Job Processing
+
+How queued jobs (summarisation, embedding) are consumed.
+
+```mermaid
+flowchart LR
+    API[V3 API] -->|enqueue job| Queue[Redis Queue]
+    Queue --> Worker[Worker process]
+    Worker --> |claim next| Job[ProcessingJob]
+    Job --> |status=running| Process[Execute task]
+    Process --> |full_pipeline| Summarise[Generate summary]
+    Process --> |embed/index| Index[Index paper in Qdrant]
+    Summarise --> Complete[status=finished]
+    Index --> Complete
+    Complete --> |update DB| Log[(Job log)]
+```
+
+---
+
+## 15. Static Site Generation for Frontend
+
+How the Next.js app becomes a static export for GitHub Pages.
+
+```mermaid
+flowchart LR
+    Source[Next.js source] --> Build[npm run build]
+    Build --> |output: 'export'| OutDir[./out folder]
+    OutDir --> GitHub[GitHub Actions]
+    GitHub --> |deploy to gh-pages branch| Pages[GitHub Pages]
+    Pages --> CDN[CDN / arxivcopilot.github.io]
+```
+
+---
 ## 🤝 Contributing
 
 We welcome contributions! Please follow these steps:
@@ -438,7 +807,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-**Built with ❤️ by researchers, for researchers.**
+Built by Lalit with the help of his creativity and help from LLMs
 ```
 
 This README is comprehensive, explains the project’s layered architecture, includes mermaid flowcharts, and serves as both user guide and developer reference. You can place it as `README.md` in the project root.
