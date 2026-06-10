@@ -542,13 +542,17 @@ flowchart LR
 How the system mixes subscription, trending, and knowledge‑gap lanes.
 
 ```mermaid
-flowchart TB
-    User[User ID] --> Profile[(User Profile)]
-    Profile --> |interests, read papers, subscriptions| Ranker[Paper Ranker]
-    Papers[(Paper DB)] --> Ranker
-    Ranker --> |score = f(topic_match, freshness, popularity, subscriptions, knowledge_gap)| Ranked[Ranked Papers]
-    Ranked --> Interleaver[Lane Interleaver]
-    Interleaver --> |for_you, trending, subscriptions, continue_learning| Feed[Personalised Feed]
+graph TD
+    User[User] --> Frontend[Next.js Frontend]
+    Frontend -->|POST /auth/login| V5_API[V5 API :8001]
+    V5_API -->|JWT token| Frontend
+    Frontend -->|Bearer token| Dashboard[Dashboard / Workspace]
+    Dashboard -->|WebSocket| WS[WebSocket Server]
+    WS -->|broadcast annotations| Collaborators[Other users]
+    Dashboard -->|POST /workspaces/id/annotations| V5_API
+    V5_API -->|store| InMemory[In-memory repository]
+    V5_API -->|permission check| RBAC[Role-based access control]
+    RBAC -->|owner, admin, editor, viewer| Access[Action allowed or denied]
 ```
 
 ---
@@ -668,14 +672,18 @@ flowchart TB
 How concurrent edits are merged deterministically.
 
 ```mermaid
-flowchart LR
-    Alice[Alice edits note] --> Op1[Operation INSERT at index 5]
-    Bob[Bob edits note] --> Op2[Operation DELETE range 2-4]
-    Op1 --> Merge[Merge Engine]
-    Op2 --> Merge
-    Merge --> |sort by (actor, counter)| Log[Append‑only operation log]
-    Log --> State[CRDT State]
-    State --> |materialise| Text[Converged document text]
+graph LR
+    Papers[Paper corpus] --> Extractor[Claim & evidence extraction]
+    Extractor --> ClaimGraph[Claim graph]
+    ClaimGraph --> TheoryAgent[Theory agent]
+    TheoryAgent --> |assumptions, predictions| HypothesisGen[Hypothesis generation]
+    HypothesisGen --> |contradiction mining, boundary expansion| Hypothesis[Testable hypothesis]
+    Hypothesis --> ExperimentAgent[Experiment agent]
+    ExperimentAgent --> |protocol, metrics, falsification| ExperimentPlan[Experiment plan]
+    ExperimentPlan --> ReviewerAgent[Reviewer agent]
+    ReviewerAgent --> |critique, confidence| RankedHypothesis[Ranked hypothesis]
+    RankedHypothesis --> HumanGate[Human approval gate]
+    HumanGate --> Execute[Execute experiment]
 ```
 
 ---
@@ -726,17 +734,26 @@ stateDiagram-v2
 How changes flow from commit to production.
 
 ```mermaid
-flowchart LR
-    Push[git push to main] --> CI[CI workflow]
-    CI --> Lint[Lint + Terraform fmt]
-    CI --> Test[Run all tests]
-    CI --> Security[Trivy scan]
-    Security --> Build[Build containers]
-    Build --> Staging[Deploy to staging (Helm)]
-    Staging --> Smoke[Smoke tests]
-    Smoke --> Approval[Manual approval]
-    Approval --> Prod[Deploy to production (Helm)]
-    Prod --> Observability[Prometheus/Grafana monitoring]
+graph TD
+    Start[Learner starts] --> ModeSelect[Select education mode: Beginner / Undergraduate / Grad / Researcher]
+    ModeSelect --> ConceptGraph[Extract concept graph from paper]
+    ConceptGraph --> Prerequisites[Identify prerequisites]
+    Prerequisites --> Quiz[Generate diagnostic quiz]
+    Quiz --> TutorSession[Tutoring session]
+    TutorSession --> UserInput[Learner types message]
+    UserInput --> Classify{Classify message}
+    Classify -->|contains 'confused', 'lost'| LowerConfidence[Lower mastery score]
+    LowerConfidence --> Scaffold[Provide scaffolded explanation]
+    Scaffold --> OfferQuiz[Offer low-stakes quiz]
+    Classify -->|contains 'got it', 'i know'| RaiseConfidence[Raise mastery score]
+    RaiseConfidence --> Extend[Give extension / critique question]
+    Extend --> NextConcept[Advance to next concept]
+    Classify -->|other| Socratic[Ask Socratic question]
+    Socratic --> UpdateConfidence[Update confidence based on answer]
+    UpdateConfidence --> OfferQuiz
+    OfferQuiz --> TutorSession
+    NextConcept --> TutorSession
+    TutorSession --> |mastery > threshold| Complete[Complete learning path]
 ```
 
 ---
