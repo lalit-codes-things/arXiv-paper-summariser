@@ -498,24 +498,22 @@ sequenceDiagram
 Shows how the project grew from V1 to V18, each layer building on the previous.
 
 ```mermaid
-flowchart LR
-    V1[V1: Single‑paper pipeline] --> V2[V2: Structured summaries + flashcards]
-    V2 --> V3[V3: Research API, search, chat, memory]
-    V3 --> V4[V4: Autonomous agents, monitoring]
-    V4 --> V5[V5: Auth, workspaces, real‑time]
-    V5 --> V6[V6: Research OS (design)]
-    V6 --> V7[V7: Collaboration, CRDT sync]
-    V7 --> V8[V8: Literature review synthesis]
-    V8 --> V9[V9: Implementation workflow]
-    V9 --> V10[V10: Hypothesis & experiment]
-    V10 --> V11[V11: Personalised discovery]
-    V11 --> V12[V12: Knowledge graph]
-    V12 --> V13[V13: Adaptive tutoring]
-    V13 --> V14[V14: Publication workflows]
-    V14 --> V15[V15: Research simulation]
-    V15 --> V16[V16: Multimodal understanding]
-    V16 --> V17[V17: Enterprise deployment]
-    V17 --> V18[V18: Memory & orchestration]
+flowchart TB
+    User["User"] --> Frontend["Next.js Frontend"]
+    Frontend --> V3_API["V3 Research API :8000"]
+    V3_API --> ST["Sentence-Transformers"]
+    ST --> Qdrant["Qdrant Vector DB"]
+    Qdrant --> DB["PostgreSQL"]
+    DB --> V3_API
+    V3_API --> Frontend
+    Frontend --> User
+    User --> PaperPage["Paper detail page"]
+    PaperPage --> V3_API
+    V3_API --> Claude["Anthropic Claude"]
+    Claude --> V3_API
+    V3_API --> DB
+    V3_API --> PaperPage
+    PaperPage --> User
 ```
 
 ---
