@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'wouter';
 import {
   BookOpen, FileText, GitGraph, LayoutDashboard,
-  Rss, Search, TrendingUp, Users, User, LogIn,
+  Rss, Search, TrendingUp, Users, User, LogIn, LogOut,
 } from 'lucide-react';
 import { CommandPalette } from './command-palette';
+import { useAuth } from '@workspace/replit-auth-web';
 
 const nav = [
   { label: 'Search', href: '/search', Icon: Search },
@@ -18,6 +19,7 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { isAuthenticated, user, login, logout } = useAuth();
 
   return (
     <div className="flex min-h-screen">
@@ -54,16 +56,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* Footer — auth */}
         <div className="px-3 pb-4 space-y-0.5 border-t border-white/10 pt-3">
-          <Link href="/login">
-            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-              location === '/login' ? 'bg-[#B9FF66] text-[#191A23]' : 'text-zinc-400 hover:text-white hover:bg-white/8'
-            }`}>
+          {isAuthenticated ? (
+            <>
+              <div className="flex items-center gap-2.5 px-3 py-2">
+                <div className="w-6 h-6 rounded-full bg-[#B9FF66] flex items-center justify-center text-[#191A23] text-xs font-bold shrink-0">
+                  {(user?.firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()}
+                </div>
+                <span className="text-xs text-white truncate flex-1">
+                  {user?.firstName ?? user?.email ?? 'Account'}
+                </span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/8 transition-all cursor-pointer"
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                Log out
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={login}
+              className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                location === '/login' ? 'bg-[#B9FF66] text-[#191A23]' : 'text-zinc-400 hover:text-white hover:bg-white/8'
+              }`}
+            >
               <LogIn className="h-4 w-4 shrink-0" />
-              Login
-            </div>
-          </Link>
+              Log in
+            </button>
+          )}
           <div className="flex items-center gap-2 px-3 pt-2">
             <kbd className="bg-white/10 text-zinc-400 px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</kbd>
             <span className="text-xs text-zinc-500">Quick search</span>

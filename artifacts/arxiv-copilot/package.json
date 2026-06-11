@@ -75,6 +75,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "@workspace/replit-auth-web": "workspace:*"
   }
 }
