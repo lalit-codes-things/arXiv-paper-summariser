@@ -5,6 +5,7 @@ import { arxiv, type ArxivPaper } from '@/lib/api';
 import { useQueries } from '@tanstack/react-query';
 import { BookmarkCheck, ExternalLink, Lock, User } from 'lucide-react';
 import { Link } from 'wouter';
+import { ByokPanel } from '@/components/byok-panel';
 
 function CategoryBar({ counts }: { counts: Record<string, number> }) {
   const entries = Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 8);
@@ -32,7 +33,6 @@ export default function ProfilePage() {
   const { isAuthenticated, isLoading: authLoading, user, login } = useAuth();
   const { bookmarks } = useBookmarks();
 
-  // Fetch up to 12 bookmarked papers to derive real category counts
   const paperQueries = useQueries({
     queries: bookmarks.slice(0, 12).map((id) => ({
       queryKey: ['paper', id],
@@ -73,7 +73,6 @@ export default function ProfilePage() {
     );
   }
 
-  // Derive real category counts from fetched papers
   const categoryCounts: Record<string, number> = {};
   for (const q of paperQueries) {
     if (q.data) {
@@ -95,11 +94,11 @@ export default function ProfilePage() {
       <div className="mb-8">
         <span className="p-tag mb-3 inline-block">You</span>
         <h1 className="text-4xl font-bold text-[#191A23] mb-2">Research Profile</h1>
-        <p className="text-[#898989]">Your reading history and saved papers.</p>
+        <p className="text-[#898989]">Your reading history, saved papers, and settings.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Identity card */}
+        {/* Identity */}
         <div className="p-card p-6 flex items-center gap-4">
           {user?.profileImageUrl ? (
             <img
@@ -108,15 +107,13 @@ export default function ProfilePage() {
               className="w-16 h-16 rounded-2xl object-cover border border-[#191A23]/10 shrink-0"
             />
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[#B9FF66] flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-[#B9FF66] border border-[#191A23] flex items-center justify-center shrink-0">
               <span className="text-2xl font-bold text-[#191A23]">{initials}</span>
             </div>
           )}
           <div className="min-w-0">
             <p className="text-lg font-bold text-[#191A23] truncate">{displayName}</p>
-            {user?.email && (
-              <p className="text-sm text-[#898989] truncate">{user.email}</p>
-            )}
+            {user?.email && <p className="text-sm text-[#898989] truncate">{user.email}</p>}
             <p className="text-sm text-[#898989] mt-1">
               <span className="font-semibold text-[#191A23]">{bookmarks.length}</span>{' '}
               saved paper{bookmarks.length !== 1 ? 's' : ''}
@@ -124,7 +121,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Category activity — derived from real bookmarks */}
+        {/* Category activity */}
         <div className="p-card p-6">
           <h2 className="font-bold text-[#191A23] mb-4">Category Activity</h2>
           {bookmarks.length === 0 ? (
@@ -149,13 +146,16 @@ export default function ProfilePage() {
           ) : hasCategoryData ? (
             <CategoryBar counts={categoryCounts} />
           ) : (
-            <p className="text-sm text-[#898989]">
-              Could not load paper data. Check your connection.
-            </p>
+            <p className="text-sm text-[#898989]">Could not load paper data.</p>
           )}
         </div>
 
-        {/* Saved papers — full list with real titles */}
+        {/* BYOK API Settings */}
+        <div className="md:col-span-2">
+          <ByokPanel />
+        </div>
+
+        {/* Saved papers */}
         <div className="p-card p-6 md:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <BookmarkCheck className="h-4 w-4 text-[#191A23]" />
@@ -166,9 +166,7 @@ export default function ProfilePage() {
             <div className="text-center py-8 text-[#898989] text-sm">
               No bookmarks yet.{' '}
               <Link href="/papers">
-                <span className="text-[#191A23] font-medium underline underline-offset-2 cursor-pointer">
-                  Browse papers
-                </span>
+                <span className="text-[#191A23] font-medium underline underline-offset-2 cursor-pointer">Browse papers</span>
               </Link>{' '}
               and save the ones you want to read.
             </div>
@@ -184,9 +182,7 @@ export default function ProfilePage() {
                     <div className="min-w-0">
                       {paper ? (
                         <>
-                          <p className="text-sm font-medium text-[#191A23] line-clamp-2 leading-snug">
-                            {paper.title}
-                          </p>
+                          <p className="text-sm font-medium text-[#191A23] line-clamp-2 leading-snug">{paper.title}</p>
                           <p className="text-xs text-[#898989] mt-1 truncate">
                             {paper.authors[0]}{paper.authors.length > 1 ? ` +${paper.authors.length - 1}` : ''}
                             {' · '}{paper.published?.slice(0, 4)}
