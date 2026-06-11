@@ -5,6 +5,12 @@ import SearchPage from '@/pages/search';
 import PapersPage from '@/pages/papers';
 import TrendingPage from '@/pages/trending';
 import PaperDetailPage from '@/pages/paper-detail';
+import DashboardPage from '@/pages/dashboard';
+import FeedPage from '@/pages/feed';
+import GraphPage from '@/pages/graph';
+import WorkspacePage from '@/pages/workspace';
+import ProfilePage from '@/pages/profile';
+import LoginPage from '@/pages/login';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({
@@ -19,6 +25,12 @@ function Router() {
       <Route path="/papers" component={PapersPage} />
       <Route path="/trending" component={TrendingPage} />
       <Route path="/paper/:id" component={PaperDetailPage} />
+      <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/feed" component={FeedPage} />
+      <Route path="/graph" component={GraphPage} />
+      <Route path="/workspace" component={WorkspacePage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/login" component={LoginPage} />
       <Route component={NotFound} />
     </Switch>
   );

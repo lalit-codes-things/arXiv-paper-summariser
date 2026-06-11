@@ -52,7 +52,6 @@ export default function Home() {
 
       {/* Hero — search centric */}
       <section className="flex-1 flex flex-col items-center justify-center px-6 py-20 text-center">
-        <span className="p-tag mb-6">Live arXiv data · No sign-up</span>
         <h1 className="text-5xl md:text-6xl font-bold text-[#191A23] leading-tight mb-4 max-w-2xl">
           Find and read any<br />
           <span className="bg-[#B9FF66] px-2 rounded-md">arXiv paper</span>
