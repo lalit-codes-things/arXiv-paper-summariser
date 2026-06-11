@@ -1,0 +1,168 @@
+Here's a complete **"Features & How It Works"** document you can share with Replit (or anyone) to explain what your website does under the hood. This answers both "what can users do?" and "how does the system make it happen?"
+
+---
+
+# arXiv Paper Summariser – Features & How It Works
+
+## 🧩 What Users Can Do (Frontend Features)
+
+| Feature | Description |
+|---------|-------------|
+| **Browse papers** | See all ingested papers, filter by topic (cs.AI, cs.LG, etc.), save bookmarks. |
+| **Semantic search** | Type a question like "attention mechanisms for long sequences" – get ranked papers by meaning, not just keywords. |
+| **AI chat on a paper** | Open any paper, ask questions (e.g., "What's the main limitation?"), get answers grounded in that paper's content. |
+| **Personalised feed** | A TikTok‑style feed that learns what you read, like, save – shows you papers you're likely to care about. |
+| **Trending page** | See which papers are getting the most views and searches across the platform. |
+| **Knowledge graph** | Interactive graph showing relationships: papers, authors, methods, datasets, contradictions. |
+| **Team workspace** | Real‑time shared workspace: add annotations, write collaborative literature reviews, create flashcards. |
+| **Dashboard** | Your reading stats, trending topics, recommended papers. |
+| **Login (demo)** | Email `founder@arxivcopilot.ai` / password `research` – demonstrates JWT auth and role‑based access. |
+
+---
+
+## ⚙️ How It Works (Backend & Processing)
+
+### 1. Paper Ingestion
+
+**What happens when you click "Ingest from arXiv"**
+- The frontend calls `POST /api/v3/ingest/category` with a category (e.g., `cs.AI`) and a max results count.
+- The V3 research API fetches the arXiv Atom feed, parses XML, and creates `Paper` records in PostgreSQL.
+- Each paper is split into chunks (title, abstract, methodology, contributions, etc.) – these chunks are embedded using a sentence‑transformer model (`all-MiniLM-L6-v2`).
+- Embeddings are stored in Qdrant (vector database). Chunks are stored in PostgreSQL.
+- A background worker (APScheduler or KEDA) can also run every hour to automatically ingest new papers from default categories (`cs.AI`, `cs.CL`, `cs.LG`, `cs.CV`, `stat.ML`).
+
+**Result:** Papers become searchable by meaning and can be used in chat.
+
+### 2. Semantic Search
+
+**What happens when you type a query**
+- Your query text is sent to `GET /api/v3/search?q=...`.
+- The V3 API uses the same embedding model to convert your query into a vector.
+- That vector is sent to Qdrant to find the most similar paper chunks (cosine similarity).
+- The top matching paper IDs are used to fetch full paper objects from PostgreSQL.
+- If Qdrant returns fewer than the requested limit, the system falls back to PostgreSQL keyword search (ILIKE on title/abstract/summary).
+- Results are returned with a similarity score, match type (`semantic` or `keyword`), and the matched chunk text.
+
+**Result:** You see papers that are conceptually relevant, not just those containing your exact words.
+
+### 3. AI Chat on a Paper
+
+**What happens when you type a question inside a paper**
+- Frontend sends `POST /api/v3/chat/paper` with `paper_id`, `message`, and conversation history.
+- V3 API fetches the paper’s metadata (title, abstract, authors, topics, summary, methodology).
+- It builds a system prompt that includes that metadata as context.
+- The prompt + conversation history is sent to Anthropic Claude (or falls back to a heuristic answer if no API key is set).
+- Claude returns an answer plus citations.
+- The API also records a memory event (user viewed/interacted with the paper) to improve personalisation.
+- The answer is returned to the frontend and displayed in the chat panel.
+
+**Result:** You can ask "What method do they use?" and get an answer specific to that paper.
+
+### 4. Personalised Feed
+
+**What happens when you open the Feed page**
+- Frontend calls `GET /api/v3/feed/personalized?user_id=...&limit=20`.
+- V3 API fetches all papers (or a large batch) and passes them to the `PersonalizationMemory` + `RecommendationEngine` (V11 system).
+- The engine retrieves the user’s profile: topic affinity, author affinity, conference affinity, subscribed topics, read papers, dismissed papers, knowledge progression.
+- Each paper is scored using a weighted formula:
+  ```
+  score = topic_match*0.28 + author_match*0.16 + conference_match*0.12
+        + semantic_match*0.16 + freshness*0.1 + popularity*0.08
+        + subscriptions*0.08 + knowledge_gap*0.02
+  ```
+- Papers that have been dismissed or already read are heavily penalised (score multiplied by 0.2).
+- The top results are interleaved into lanes: `for_you`, `trending`, `subscriptions`, `continue_learning`.
+- Each feed item includes a human‑readable reason (e.g., "Because you subscribe to graph neural networks").
+
+**Result:** Each user sees a different, personalised feed that evolves as they interact.
+
+### 5. Trending Papers
+
+**What happens when you open the Trending page**
+- Frontend calls `GET /api/v3/trending?limit=15`.
+- V3 API queries the `paper_metrics` table, which tracks `views` and `searches` per paper.
+- Papers are sorted by a combination of recent views/searches, recency, and popularity signals (citation count, download count if available from enrichment).
+- A score is calculated as: `velocity*0.46 + freshness*0.26 + citations*0.16 + downloads*0.12`.
+- Results are returned with the paper details and a reason (e.g., "High community engagement").
+
+**Result:** Users see what the community is reading right now.
+
+### 6. Knowledge Graph
+
+**What happens when you open the Graph page**
+- Frontend calls `GET /api/v1/graph` (V5 endpoint) – this is currently a static demo graph.
+- The production graph (V12) is built by the `RelationshipExtractionPipeline` when papers are ingested. It extracts:
+  - Nodes: `Paper`, `Author`, `Dataset`, `Model`, `Method`, `Conference`, `Benchmark`
+  - Edges: `CITES`, `IMPROVES`, `CONTRADICTS`, `INSPIRED_BY`, `EVALUATED_ON`, `AUTHORED_BY`
+- The graph is stored in an in‑memory `KnowledgeGraph` (or optionally Neo4j if configured).
+- The frontend renders an interactive SVG using Cytoscape.js (via the `GraphCanvas` component).
+
+**Result:** Users can visually explore how papers, authors, and concepts are connected.
+
+### 7. Team Workspace & Real‑Time Collaboration
+
+**What happens when you join a workspace**
+- After login, you have a workspace ID (default: `workspace-ai-lab`).
+- The frontend opens a WebSocket connection to `ws://localhost:8001/api/v1/workspaces/{id}/ws`.
+- The V5 API uses a `ConnectionManager` to track active WebSockets per workspace.
+- When a user adds an annotation, the API broadcasts a `type: "annotation.created"` event to all connected clients.
+- The shared state (notes, literature reviews) uses a CRDT‑style sync engine (from `research_cloud/sync_engine.py`) so offline edits merge deterministically.
+- Permissions are enforced by a `PermissionSystem` (owner, admin, editor, commenter, viewer, AI agent).
+
+**Result:** Multiple researchers can annotate the same paper in real time, see each other’s cursors, and never lose edits.
+
+### 8. Memory & Personalisation
+
+**Every user action is tracked**
+- When you view a paper, the frontend calls `POST /api/v3/memory/events` with `user_id`, `paper_id`, `action`.
+- The V3 API updates the `user_profiles` table:
+  - Increases affinity for topics, authors, conferences mentioned in the paper.
+  - Adds the paper to `read_papers`.
+  - Increments the daily read count (for streak calculation).
+  - Updates `knowledge_progression` for each topic (so the system knows you've "learned" something).
+- The `PersonalizationMemory` class (V11) applies exponential decay to older affinities, so recent interests matter more.
+- The `reading_streak` is computed by counting consecutive days with at least one read paper.
+
+**Result:** Over time, the feed becomes more accurate, and the system can recommend papers that fill gaps in your knowledge.
+
+### 9. AI Chat Fallback & Offline Mode
+
+**If you don't provide an API key for Anthropic**
+- The `/chat/paper` endpoint still works – it returns a heuristic answer:
+  - For example: `"For 'Paper Title': abstract excerpt..."`
+- The `SummarizationEngine` (V2/V3) also has a `HeuristicLLMClient` that extracts sentences containing keywords like "method", "contribution", "limitation" to simulate structured output.
+- All embedding generation works locally with the sentence‑transformer model – no external API required.
+- Qdrant can run in memory (`VECTOR_BACKEND=memory`) for local testing without any external database.
+
+**Result:** The platform works completely offline or with zero API credits – just slower and less intelligent.
+
+### 10. Deployment & Scaling (How It Runs)
+
+- **Local development:** `docker-compose.dev.yml` spins up Postgres, Redis, Qdrant, V3 API, V5 API, and Next.js frontend with hot reload.
+- **Production Kubernetes:** Helm chart deploys API (HPA), workers (KEDA scaling based on queue depth), with network policies, resource quotas per tenant, and SSO via OIDC.
+- **Observability:** OpenTelemetry collector sends traces to Tempo, metrics to Prometheus, logs to Loki. Grafana dashboards show error rates, queue depth, audit lag.
+- **Audit logging:** All tenant‑critical actions (login, role change, paper deletion, export) are logged as immutable JSON events to an S3 bucket with 7‑year retention.
+
+---
+
+## 📊 Summary Diagram (Simplified Data Flow)
+
+```mermaid
+graph LR
+    User[User] --> Frontend[Next.js]
+    Frontend --> V3[V3 API]
+    Frontend --> V5[V5 API]
+    V3 --> PG[(PostgreSQL)]
+    V3 --> Qdrant[(Qdrant)]
+    V3 --> Claude[Claude AI]
+    V3 --> ST[Sentence‑Transformer]
+    V5 --> WS[WebSocket]
+    V5 --> PG
+    Worker --> PG
+    Worker --> Qdrant
+    Worker --> Arxiv[arXiv API]
+```
+
+---
+
+Now Replit (or anyone reading) should understand exactly what your website does and how each feature is implemented. Let me know if you need me to turn this into a `README.md` section or a separate `docs/HOW_IT_WORKS.md` file.
