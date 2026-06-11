@@ -28,7 +28,6 @@ export default function Home() {
           <div className="w-7 h-7 bg-[#B9FF66] border border-[#191A23] rounded-lg flex items-center justify-center">
             <BookOpen className="h-3.5 w-3.5 text-[#191A23]" />
           </div>
-          <span className="font-bold text-[#191A23] text-base">ArXiv Paper Summariser</span>
         </div>
         <button
           onClick={login}
