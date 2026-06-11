@@ -3,7 +3,6 @@ import {
   BookOpen, FileText, GitGraph, LayoutDashboard,
   Rss, Search, TrendingUp, Users, User, LogIn, LogOut,
 } from 'lucide-react';
-import { CommandPalette } from './command-palette';
 import { useAuth } from '@workspace/replit-auth-web';
 
 const nav = [
@@ -22,21 +21,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, login, logout } = useAuth();
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-60 bg-[#191A23] z-30">
-        {/* Logo — always goes home */}
+    <div className="flex min-h-screen bg-[#F3F3F3]">
+      {/* Sidebar — white, dark right border, matches card style */}
+      <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-60 bg-white border-r border-[#191A23] z-30">
+
+        {/* Logo */}
         <Link href="/">
-          <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10 cursor-pointer hover:opacity-80 transition-opacity">
-            <div className="w-7 h-7 bg-[#B9FF66] rounded-lg flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-2.5 px-5 py-5 border-b border-[#191A23] cursor-pointer hover:bg-[#F3F3F3] transition-colors">
+            <div className="w-7 h-7 bg-[#B9FF66] border border-[#191A23] rounded-lg flex items-center justify-center shrink-0">
               <BookOpen className="h-3.5 w-3.5 text-[#191A23]" />
             </div>
-            <span className="font-bold text-white text-sm leading-tight">ArXiv Paper<br />Summariser</span>
+            <span className="font-bold text-[#191A23] text-sm leading-tight">ArXiv Paper<br />Summariser</span>
           </div>
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
           {nav.map(({ label, href, Icon }) => {
             const active = location === href || (href !== '/' && location.startsWith(href));
             return (
@@ -44,8 +44,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#B9FF66] text-[#191A23]'
-                      : 'text-zinc-400 hover:text-white hover:bg-white/8'
+                      ? 'bg-[#B9FF66] text-[#191A23] border border-[#191A23]'
+                      : 'text-[#191A23] hover:bg-[#F3F3F3]'
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -56,41 +56,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer — auth */}
-        <div className="px-3 pb-4 space-y-0.5 border-t border-white/10 pt-3">
+        {/* Footer — auth only, no ⌘K */}
+        <div className="px-3 pb-4 pt-3 border-t border-[#191A23]">
           {isAuthenticated ? (
-            <>
+            <div className="space-y-0.5">
               <div className="flex items-center gap-2.5 px-3 py-2">
-                <div className="w-6 h-6 rounded-full bg-[#B9FF66] flex items-center justify-center text-[#191A23] text-xs font-bold shrink-0">
+                <div className="w-6 h-6 rounded-full bg-[#B9FF66] border border-[#191A23] flex items-center justify-center text-[#191A23] text-xs font-bold shrink-0">
                   {(user?.firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()}
                 </div>
-                <span className="text-xs text-white truncate flex-1">
+                <span className="text-xs text-[#191A23] font-medium truncate flex-1">
                   {user?.firstName ?? user?.email ?? 'Account'}
                 </span>
               </div>
               <button
                 onClick={logout}
-                className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/8 transition-all cursor-pointer"
+                className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#191A23] hover:bg-[#F3F3F3] transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4 shrink-0" />
                 Log out
               </button>
-            </>
+            </div>
           ) : (
             <button
               onClick={login}
-              className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                location === '/login' ? 'bg-[#B9FF66] text-[#191A23]' : 'text-zinc-400 hover:text-white hover:bg-white/8'
+              className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                location === '/login'
+                  ? 'bg-[#B9FF66] text-[#191A23] border border-[#191A23]'
+                  : 'text-[#191A23] hover:bg-[#F3F3F3]'
               }`}
             >
               <LogIn className="h-4 w-4 shrink-0" />
               Log in
             </button>
           )}
-          <div className="flex items-center gap-2 px-3 pt-2">
-            <kbd className="bg-white/10 text-zinc-400 px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</kbd>
-            <span className="text-xs text-zinc-500">Quick search</span>
-          </div>
         </div>
       </aside>
 
@@ -100,8 +98,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
-
-      <CommandPalette />
     </div>
   );
 }
