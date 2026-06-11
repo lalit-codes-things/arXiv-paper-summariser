@@ -32,4 +32,7 @@ export const arxiv = {
 
   recent: (cats = "cs.AI,cs.CL", max = 20) =>
     request<ArxivPaper[]>(`/api/arxiv/recent?cats=${encodeURIComponent(cats)}&max=${max}`),
+
+  paper: (id: string) =>
+    request<ArxivPaper>(`/api/arxiv/paper?id=${encodeURIComponent(id)}`),
 };

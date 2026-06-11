@@ -82,6 +82,20 @@ router.get("/category", async (req, res) => {
   res.json(papers);
 });
 
+router.get("/paper", async (req, res) => {
+  const id = (req.query.id as string) ?? "";
+  if (!id) {
+    res.status(400).json({ error: "id is required" });
+    return;
+  }
+  const papers = await queryArxiv({ id_list: id, max_results: "1" });
+  if (!papers[0]) {
+    res.status(404).json({ error: "Paper not found" });
+    return;
+  }
+  res.json(papers[0]);
+});
+
 router.get("/recent", async (req, res) => {
   const cats = (req.query.cats as string) ?? "cs.AI";
   const max = Math.min(Number(req.query.max) || 20, 50);
