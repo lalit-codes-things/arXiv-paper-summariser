@@ -75,7 +75,9 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "zustand": "^5.0.14",
-    "@workspace/replit-auth-web": "workspace:*"
+    "@clerk/react": "^6.7.3",
+    "@clerk/themes": "^2.4.57",
+    "@workspace/replit-auth-web": "workspace:*",
+    "zustand": "^5.0.14"
   }
 }

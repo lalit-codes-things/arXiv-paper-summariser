@@ -1,7 +1,5 @@
-import { useEffect } from 'react';
-import { useLocation } from 'wouter';
-import { useAuth } from '@workspace/replit-auth-web';
 import { BookOpen, Search, Sparkles, TrendingUp, GitGraph, Users, KeyRound } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 const FEATURES = [
   { Icon: Search, label: 'Semantic search', desc: 'Find relevant papers instantly across 2 million arXiv preprints.' },
@@ -13,12 +11,7 @@ const FEATURES = [
 ];
 
 export default function Home() {
-  const { isAuthenticated, isLoading, login } = useAuth();
   const [, navigate] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) navigate('/search');
-  }, [isAuthenticated, isLoading, navigate]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -29,12 +22,8 @@ export default function Home() {
             <BookOpen className="h-3.5 w-3.5 text-[#191A23]" />
           </div>
         </div>
-        <button
-          onClick={login}
-          disabled={isLoading}
-          className="p-btn-dark text-sm"
-        >
-          {isLoading ? 'Loading…' : 'Sign in'}
+        <button onClick={() => navigate('/sign-in')} className="p-btn-dark text-sm">
+          Sign in
         </button>
       </header>
 
@@ -48,14 +37,13 @@ export default function Home() {
         <p className="text-lg text-[#898989] mb-10 max-w-lg leading-relaxed">
           An AI-powered platform for searching, reading, and discussing arXiv preprints — with personalised ranking, knowledge graphs, and team collaboration.
         </p>
-        <button
-          onClick={login}
-          disabled={isLoading}
-          className="p-btn-dark text-base px-8 py-3.5"
-        >
-          {isLoading ? 'Loading…' : 'Sign in to get started →'}
+        <button onClick={() => navigate('/sign-up')} className="p-btn-dark text-base px-8 py-3.5">
+          Get started for free →
         </button>
-        <p className="text-xs text-[#898989] mt-4">Sign in with your Replit account. Free to use.</p>
+        <p className="text-xs text-[#898989] mt-4">
+          Already have an account?{' '}
+          <button onClick={() => navigate('/sign-in')} className="underline text-[#191A23] font-medium">Sign in</button>
+        </p>
       </section>
 
       {/* Features grid */}
@@ -80,9 +68,9 @@ export default function Home() {
       {/* Bottom CTA */}
       <section className="bg-[#191A23] px-8 py-16 text-center">
         <h2 className="text-3xl font-bold text-white mb-4">Ready to start researching?</h2>
-        <p className="text-[#898989] mb-8">Sign in and access every feature instantly.</p>
-        <button onClick={login} disabled={isLoading} className="p-btn-green text-base px-8 py-3.5">
-          {isLoading ? 'Loading…' : 'Sign in with Replit →'}
+        <p className="text-[#898989] mb-8">Sign up and access every feature instantly.</p>
+        <button onClick={() => navigate('/sign-up')} className="p-btn-green text-base px-8 py-3.5">
+          Create free account →
         </button>
       </section>
     </div>

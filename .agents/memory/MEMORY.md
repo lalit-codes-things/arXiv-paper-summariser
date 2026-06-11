@@ -1,0 +1,1 @@
+- [Clerk auth setup](clerk-auth.md) — migrated from Replit Auth to Clerk; key wiring details and what was removed

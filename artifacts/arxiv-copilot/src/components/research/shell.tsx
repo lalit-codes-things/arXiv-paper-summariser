@@ -3,7 +3,7 @@ import {
   BookOpen, FileText, GitGraph, LayoutDashboard,
   Rss, Search, TrendingUp, Users, User, LogIn, LogOut,
 } from 'lucide-react';
-import { useAuth } from '@workspace/replit-auth-web';
+import { useUser, useClerk } from '@clerk/react';
 
 const nav = [
   { label: 'Search', href: '/search', Icon: Search },
@@ -16,13 +16,27 @@ const nav = [
   { label: 'Profile', href: '/profile', Icon: User },
 ];
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { isAuthenticated, user, login, logout } = useAuth();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+
+  const initials = (
+    user?.firstName?.[0] ??
+    user?.emailAddresses?.[0]?.emailAddress?.[0] ??
+    '?'
+  ).toUpperCase();
+
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    user?.emailAddresses?.[0]?.emailAddress ||
+    'Account';
 
   return (
     <div className="flex min-h-screen bg-[#F3F3F3]">
-      {/* Sidebar — white, dark right border, matches card style */}
+      {/* Sidebar */}
       <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-60 bg-white border-r border-[#191A23] z-30">
 
         {/* Logo */}
@@ -41,13 +55,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active = location === href || (href !== '/' && location.startsWith(href));
             return (
               <Link key={href} href={href}>
-                <div
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                    active
-                      ? 'bg-[#B9FF66] text-[#191A23] border border-[#191A23]'
-                      : 'text-[#191A23] hover:bg-[#F3F3F3]'
-                  }`}
-                >
+                <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  active
+                    ? 'bg-[#B9FF66] text-[#191A23] border border-[#191A23]'
+                    : 'text-[#191A23] hover:bg-[#F3F3F3]'
+                }`}>
                   <Icon className="h-4 w-4 shrink-0" />
                   {label}
                 </div>
@@ -56,20 +68,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Footer — auth only, no ⌘K */}
+        {/* Footer */}
         <div className="px-3 pb-4 pt-3 border-t border-[#191A23]">
-          {isAuthenticated ? (
+          {isLoaded && isSignedIn ? (
             <div className="space-y-0.5">
               <div className="flex items-center gap-2.5 px-3 py-2">
-                <div className="w-6 h-6 rounded-full bg-[#B9FF66] border border-[#191A23] flex items-center justify-center text-[#191A23] text-xs font-bold shrink-0">
-                  {(user?.firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()}
-                </div>
-                <span className="text-xs text-[#191A23] font-medium truncate flex-1">
-                  {user?.firstName ?? user?.email ?? 'Account'}
-                </span>
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt={displayName} className="w-6 h-6 rounded-full border border-[#191A23] shrink-0 object-cover" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-[#B9FF66] border border-[#191A23] flex items-center justify-center text-[#191A23] text-xs font-bold shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <span className="text-xs text-[#191A23] font-medium truncate flex-1">{displayName}</span>
               </div>
               <button
-                onClick={logout}
+                onClick={() => signOut({ redirectUrl: basePath || '/' })}
                 className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#191A23] hover:bg-[#F3F3F3] transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4 shrink-0" />
@@ -77,17 +91,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           ) : (
-            <button
-              onClick={login}
-              className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
-                location === '/login'
+            <Link href="/sign-in">
+              <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+                location === '/sign-in'
                   ? 'bg-[#B9FF66] text-[#191A23] border border-[#191A23]'
                   : 'text-[#191A23] hover:bg-[#F3F3F3]'
-              }`}
-            >
-              <LogIn className="h-4 w-4 shrink-0" />
-              Log in
-            </button>
+              }`}>
+                <LogIn className="h-4 w-4 shrink-0" />
+                Log in
+              </div>
+            </Link>
           )}
         </div>
       </aside>

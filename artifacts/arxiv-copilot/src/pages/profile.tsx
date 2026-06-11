@@ -1,9 +1,9 @@
 import { AppShell } from '@/components/research/shell';
 import { useBookmarks } from '@/store/bookmarks';
-import { useAuth } from '@workspace/replit-auth-web';
+import { useUser } from '@clerk/react';
 import { arxiv, type ArxivPaper } from '@/lib/api';
 import { useQueries } from '@tanstack/react-query';
-import { BookmarkCheck, ExternalLink, Lock, User } from 'lucide-react';
+import { BookmarkCheck, ExternalLink, User } from 'lucide-react';
 import { Link } from 'wouter';
 import { ByokPanel } from '@/components/byok-panel';
 
@@ -30,7 +30,7 @@ function CategoryBar({ counts }: { counts: Record<string, number> }) {
 }
 
 export default function ProfilePage() {
-  const { isAuthenticated, isLoading: authLoading, user, login } = useAuth();
+  const { user, isLoaded } = useUser();
   const { bookmarks } = useBookmarks();
 
   const paperQueries = useQueries({
@@ -42,32 +42,11 @@ export default function ProfilePage() {
     })),
   });
 
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <AppShell>
         <div className="flex items-center justify-center h-64">
           <div className="w-6 h-6 rounded-full border-2 border-[#B9FF66] border-t-transparent animate-spin" />
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <AppShell>
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#191A23] mb-2">Profile</h1>
-          <p className="text-[#898989]">Your research identity.</p>
-        </div>
-        <div className="p-card p-12 flex flex-col items-center text-center max-w-md mx-auto">
-          <div className="w-12 h-12 bg-[#F3F3F3] border border-[#191A23]/10 rounded-2xl flex items-center justify-center mb-4">
-            <Lock className="h-6 w-6 text-[#898989]" />
-          </div>
-          <h2 className="text-xl font-bold text-[#191A23] mb-2">Sign in to see your profile</h2>
-          <p className="text-sm text-[#898989] mb-6">
-            Your reading stats and bookmarks are tied to your account.
-          </p>
-          <button onClick={login} className="p-btn-dark">Log in</button>
         </div>
       </AppShell>
     );
@@ -86,8 +65,16 @@ export default function ProfilePage() {
   const fetchingCategories = paperQueries.some((q) => q.isLoading);
   const hasCategoryData = Object.keys(categoryCounts).length > 0;
 
-  const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Researcher';
-  const initials = (user?.firstName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase();
+  const displayName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+    user?.emailAddresses?.[0]?.emailAddress ||
+    'Researcher';
+
+  const initials = (
+    user?.firstName?.[0] ??
+    user?.emailAddresses?.[0]?.emailAddress?.[0] ??
+    '?'
+  ).toUpperCase();
 
   return (
     <AppShell>
@@ -100,9 +87,9 @@ export default function ProfilePage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Identity */}
         <div className="p-card p-6 flex items-center gap-4">
-          {user?.profileImageUrl ? (
+          {user?.imageUrl ? (
             <img
-              src={user.profileImageUrl}
+              src={user.imageUrl}
               alt={displayName}
               className="w-16 h-16 rounded-2xl object-cover border border-[#191A23]/10 shrink-0"
             />
@@ -113,7 +100,9 @@ export default function ProfilePage() {
           )}
           <div className="min-w-0">
             <p className="text-lg font-bold text-[#191A23] truncate">{displayName}</p>
-            {user?.email && <p className="text-sm text-[#898989] truncate">{user.email}</p>}
+            {user?.emailAddresses?.[0]?.emailAddress && (
+              <p className="text-sm text-[#898989] truncate">{user.emailAddresses[0].emailAddress}</p>
+            )}
             <p className="text-sm text-[#898989] mt-1">
               <span className="font-semibold text-[#191A23]">{bookmarks.length}</span>{' '}
               saved paper{bookmarks.length !== 1 ? 's' : ''}
@@ -192,12 +181,7 @@ export default function ProfilePage() {
                         <span className="text-xs font-mono text-[#898989]">{id}</span>
                       )}
                     </div>
-                    <a
-                      href={`https://arxiv.org/abs/${id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 mt-0.5"
-                    >
+                    <a href={`https://arxiv.org/abs/${id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 mt-0.5">
                       <ExternalLink className="h-3.5 w-3.5 text-[#898989] hover:text-[#191A23]" />
                     </a>
                   </div>
