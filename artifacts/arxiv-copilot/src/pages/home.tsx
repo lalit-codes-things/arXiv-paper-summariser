@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useLocation, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { Search, ArrowRight, BookOpen, Loader2 } from 'lucide-react';
+import { Search, ArrowRight, Loader2 } from 'lucide-react';
 import { arxiv } from '@/lib/api';
 import { CommandPalette } from '@/components/research/command-palette';
 
@@ -35,9 +35,6 @@ export default function Home() {
       {/* Top nav */}
       <header className="flex items-center justify-between px-8 py-5 border-b border-[#191A23]/8 max-w-6xl mx-auto w-full">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-[#B9FF66] rounded-lg flex items-center justify-center">
-            <BookOpen className="h-4 w-4 text-[#191A23]" />
-          </div>
           <span className="font-bold text-[#191A23] text-base">ArXiv Paper Summariser</span>
         </div>
         <div className="flex items-center gap-2">
