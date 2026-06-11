@@ -1,130 +1,138 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearch } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
 import { AppShell } from '@/components/research/shell';
-import { Card, CardContent } from '@/components/ui/card';
-import { v3 } from '@/lib/api';
+import { arxiv, type ArxivPaper } from '@/lib/api';
+import { ExternalLink, FileText, Loader2, BookmarkPlus, BookmarkCheck } from 'lucide-react';
 import { useBookmarks } from '@/store/bookmarks';
 
-const TOPICS = ['cs.AI', 'cs.CL', 'cs.LG', 'cs.CV', 'stat.ML', 'cs.RO', 'cs.IR', 'eess.AS'];
+const CATEGORIES = [
+  { id: 'cs.AI', label: 'AI' },
+  { id: 'cs.CL', label: 'Computation & Language' },
+  { id: 'cs.LG', label: 'Machine Learning' },
+  { id: 'cs.CV', label: 'Computer Vision' },
+  { id: 'stat.ML', label: 'Stats ML' },
+  { id: 'cs.RO', label: 'Robotics' },
+  { id: 'cs.IR', label: 'Information Retrieval' },
+  { id: 'eess.AS', label: 'Audio & Speech' },
+];
+
+function PaperCard({ paper }: { paper: ArxivPaper }) {
+  const { toggle, has } = useBookmarks();
+  const saved = has(paper.id);
+  const year = paper.published ? new Date(paper.published).getFullYear() : null;
+
+  return (
+    <div className="p-card p-6 flex flex-col gap-3 hover:shadow-[4px_4px_0px_#191A23] transition-shadow">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {paper.categories.slice(0, 2).map((c) => (
+            <span key={c} className="p-tag-gray text-[10px]">{c}</span>
+          ))}
+        </div>
+        <button
+          onClick={() => toggle(paper.id)}
+          className="shrink-0 text-[#898989] hover:text-[#191A23] transition-colors"
+          title={saved ? 'Remove bookmark' : 'Bookmark'}
+        >
+          {saved ? <BookmarkCheck className="h-4 w-4 text-[#B9FF66]" /> : <BookmarkPlus className="h-4 w-4" />}
+        </button>
+      </div>
+      <h2 className="font-semibold text-[#191A23] leading-snug line-clamp-2 text-sm">{paper.title}</h2>
+      <p className="text-xs text-[#898989] leading-relaxed line-clamp-3">{paper.abstract}</p>
+      <div className="text-xs text-[#898989] mt-auto">
+        {paper.authors.slice(0, 2).join(', ')}{paper.authors.length > 2 ? ' et al.' : ''}
+        {year ? ` · ${year}` : ''}
+      </div>
+      <div className="flex gap-2 pt-1">
+        <a href={paper.abs_url} target="_blank" rel="noopener noreferrer" className="p-btn-dark text-xs px-3 py-1.5 flex-1 justify-center">
+          Abstract <ExternalLink className="h-3 w-3" />
+        </a>
+        <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer" className="p-btn-outline text-xs px-3 py-1.5 flex-1 justify-center">
+          PDF <FileText className="h-3 w-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function PapersPage() {
-  const [topic, setTopic] = useState<string | undefined>();
-  const [ingestCategory, setIngestCategory] = useState('cs.AI');
-  const [ingesting, setIngesting] = useState(false);
-  const [ingestMsg, setIngestMsg] = useState('');
-  const { toggle, has } = useBookmarks();
-  const { data = [], refetch } = useQuery({
-    queryKey: ['papers', topic],
-    queryFn: () => v3.papers(50, topic),
+  const searchStr = useSearch();
+  const params = new URLSearchParams(searchStr);
+  const [category, setCategory] = useState(params.get('cat') ?? 'cs.AI');
+
+  useEffect(() => {
+    const cat = params.get('cat');
+    if (cat) setCategory(cat);
+  }, [searchStr]);
+
+  const { data = [], isFetching, error } = useQuery({
+    queryKey: ['papers', category],
+    queryFn: () => arxiv.category(category, 30),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
-  const handleIngest = async () => {
-    setIngesting(true);
-    setIngestMsg('');
-    try {
-      const result = await v3.ingestCategory(ingestCategory, 20);
-      setIngestMsg(`Ingested ${result.ingested} papers from ${ingestCategory}`);
-      void refetch();
-    } catch {
-      setIngestMsg('Ingestion failed. Check backend logs.');
-    } finally {
-      setIngesting(false);
-    }
-  };
+  const catLabel = CATEGORIES.find((c) => c.id === category)?.label ?? category;
 
   return (
     <AppShell>
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-4xl font-semibold">Papers</h1>
-          <p className="mt-2 text-zinc-400">Browse and filter indexed research.</p>
-        </div>
-        <Card>
-          <CardContent className="p-3 flex items-center gap-3">
-            <select
-              value={ingestCategory}
-              onChange={(e) => setIngestCategory(e.target.value)}
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm"
-            >
-              {TOPICS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleIngest}
-              disabled={ingesting}
-              className="rounded-xl bg-white px-3 py-1.5 text-xs font-medium text-black transition hover:bg-zinc-200 disabled:opacity-50"
-            >
-              {ingesting ? 'Fetching…' : 'Ingest from arXiv'}
-            </button>
-          </CardContent>
-        </Card>
+      <div className="mb-8">
+        <span className="p-tag mb-3 inline-block">Live from arXiv</span>
+        <h1 className="text-4xl font-bold text-[#191A23] mb-2">Browse Papers</h1>
+        <p className="text-[#898989]">Latest preprints by category, updated continuously.</p>
       </div>
-      {ingestMsg && <p className="mt-2 text-xs text-emerald-400">{ingestMsg}</p>}
-      <div className="mt-6 flex flex-wrap gap-2">
-        <button
-          onClick={() => setTopic(undefined)}
-          className={`rounded-full px-3 py-1 text-xs border ${
-            !topic ? 'border-indigo-400 bg-indigo-400/20 text-indigo-200' : 'border-white/10 bg-white/5 text-zinc-400 hover:border-white/20'
-          }`}
-        >
-          All
-        </button>
-        {TOPICS.map((t) => (
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {CATEGORIES.map(({ id, label }) => (
           <button
-            key={t}
-            onClick={() => setTopic(topic === t ? undefined : t)}
-            className={`rounded-full px-3 py-1 text-xs border ${
-              topic === t ? 'border-indigo-400 bg-indigo-400/20 text-indigo-200' : 'border-white/10 bg-white/5 text-zinc-400 hover:border-white/20'
+            key={id}
+            onClick={() => setCategory(id)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium border transition-all ${
+              category === id
+                ? 'bg-[#191A23] text-white border-[#191A23]'
+                : 'bg-white text-[#191A23] border-[#191A23]/20 hover:border-[#191A23]'
             }`}
           >
-            {t}
+            {label}
           </button>
         ))}
       </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {data.map((paper) => (
-          <Link key={paper.id} href={`/papers/detail?id=${encodeURIComponent(paper.id)}`}>
-            <Card className="h-full hover:border-white/20 transition-colors cursor-pointer">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {paper.topics.slice(0, 2).map((t) => (
-                      <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-zinc-500">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={(event) => {
-                      event.preventDefault();
-                      toggle(paper.id);
-                    }}
-                    className="shrink-0 text-sm text-amber-300"
-                  >
-                    {has(paper.id) ? '★ Saved' : '☆ Save'}
-                  </button>
-                </div>
-                <h2 className="font-medium line-clamp-2">{paper.title}</h2>
-                <p className="mt-2 text-sm text-zinc-400 line-clamp-2">{paper.abstract}</p>
-                <p className="mt-3 text-xs text-zinc-600">
-                  {paper.authors.slice(0, 2).join(', ')}
-                  {paper.authors.length > 2 ? ' et al.' : ''}
-                  {paper.published_at && ` · ${new Date(paper.published_at).getFullYear()}`}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+
+      {/* Results header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="text-sm text-[#898989]">
+          Showing latest <span className="font-medium text-[#191A23]">{catLabel}</span> papers
+          {!isFetching && data.length > 0 && <> · {data.length} results</>}
+        </div>
+        {isFetching && (
+          <div className="flex items-center gap-2 text-xs text-[#898989]">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Loading...
+          </div>
+        )}
       </div>
-      {data.length === 0 && (
-        <div className="mt-12 text-center text-zinc-500">
-          No papers indexed yet. Use the ingest button above to fetch from arXiv.
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-700 text-sm">
+          Could not reach arXiv. Please try again in a moment.
         </div>
       )}
+
+      {isFetching && data.length === 0 && (
+        <div className="flex items-center justify-center py-24 text-[#898989]">
+          <Loader2 className="h-6 w-6 animate-spin mr-3" /> Fetching from arXiv...
+        </div>
+      )}
+
+      {!isFetching && data.length === 0 && !error && (
+        <div className="p-card p-10 text-center text-[#898989]">No papers found for this category.</div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.map((paper) => <PaperCard key={paper.id} paper={paper} />)}
+      </div>
     </AppShell>
   );
 }

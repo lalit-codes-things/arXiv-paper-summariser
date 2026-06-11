@@ -8,51 +8,56 @@ type Graph = {
 export function GraphCanvas({ graph }: { graph: Graph }) {
   const positions = graph.nodes.map((node, index) => ({
     ...node,
-    x: 240 + Math.cos((index / graph.nodes.length) * Math.PI * 2) * 190,
-    y: 240 + Math.sin((index / graph.nodes.length) * Math.PI * 2) * 170,
+    x: 300 + Math.cos((index / graph.nodes.length) * Math.PI * 2) * 220,
+    y: 260 + Math.sin((index / graph.nodes.length) * Math.PI * 2) * 200,
   }));
-  const byId = Object.fromEntries(positions.map((node) => [node.id, node]));
+  const byId = Object.fromEntries(positions.map((n) => [n.id, n]));
+
   return (
-    <svg viewBox="0 0 480 480" className="h-[520px] w-full rounded-3xl border border-white/10 bg-black/30">
+    <svg viewBox="0 0 600 520" className="w-full rounded-xl" style={{ minHeight: 400 }}>
       <defs>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <filter id="glow2">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
+
       {graph.edges.map((edge) => {
-        const source = byId[edge.source];
-        const target = byId[edge.target];
-        return source && target ? (
+        const s = byId[edge.source];
+        const t = byId[edge.target];
+        if (!s || !t) return null;
+        return (
           <line
             key={`${edge.source}-${edge.target}`}
-            x1={source.x}
-            y1={source.y}
-            x2={target.x}
-            y2={target.y}
-            stroke="rgba(129,140,248,.45)"
-            strokeWidth={1 + edge.weight * 3}
+            x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+            stroke="#191A23"
+            strokeOpacity={0.15 + edge.weight * 0.25}
+            strokeWidth={1 + edge.weight * 2}
           />
-        ) : null;
+        );
       })}
+
       {positions.map((node) => (
         <motion.g
           key={node.id}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          whileHover={{ scale: 1.08 }}
+          transition={{ delay: graph.nodes.findIndex((n) => n.id === node.id) * 0.05 }}
+          whileHover={{ scale: 1.1 }}
         >
           <circle
-            cx={node.x}
-            cy={node.y}
-            r="28"
-            fill={node.group === 'method' ? '#8b5cf6' : '#06b6d4'}
-            filter="url(#glow)"
+            cx={node.x} cy={node.y} r={32}
+            fill={node.group === 'method' ? '#B9FF66' : '#191A23'}
+            filter="url(#glow2)"
           />
-          <text x={node.x} y={node.y + 48} textAnchor="middle" className="fill-zinc-200 text-[11px]">
+          <text
+            x={node.x} y={node.y + 4}
+            textAnchor="middle"
+            fontSize="11"
+            fontFamily="Space Grotesk, sans-serif"
+            fontWeight="600"
+            fill={node.group === 'method' ? '#191A23' : '#ffffff'}
+          >
             {node.label}
           </text>
         </motion.g>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
+import { Search } from 'lucide-react';
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -10,7 +11,7 @@ export function CommandPalette() {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        setOpen((current) => !current);
+        setOpen((c) => !c);
       }
       if (event.key === 'Escape') setOpen(false);
     };
@@ -26,24 +27,31 @@ export function CommandPalette() {
   }, [query, navigate]);
 
   if (!open) return null;
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/40 backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <div
-        className="glass w-full max-w-xl rounded-2xl p-2"
-        onClick={(event) => event.stopPropagation()}
+        className="bg-white border border-[#191A23] rounded-2xl w-full max-w-xl shadow-[6px_6px_0px_#191A23] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        <input
-          autoFocus
-          className="w-full bg-transparent px-4 py-3 text-lg outline-none placeholder-zinc-500"
-          placeholder="Search papers... (Enter to search)"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && submit()}
-        />
-        <div className="px-4 py-2 text-xs text-zinc-600">↵ to search · Esc to close · ⌘K to toggle</div>
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#191A23]/10">
+          <Search className="h-4 w-4 text-[#898989] shrink-0" />
+          <input
+            autoFocus
+            className="flex-1 bg-transparent text-[#191A23] text-base outline-none placeholder-[#898989]"
+            placeholder="Search arXiv papers..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+          />
+        </div>
+        <div className="px-4 py-2.5 flex items-center gap-3 text-xs text-[#898989]">
+          <span><kbd className="bg-[#F3F3F3] px-1.5 py-0.5 rounded text-[10px] font-mono">↵</kbd> search</span>
+          <span><kbd className="bg-[#F3F3F3] px-1.5 py-0.5 rounded text-[10px] font-mono">Esc</kbd> close</span>
+        </div>
       </div>
     </div>
   );

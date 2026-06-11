@@ -1,59 +1,65 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
-import { v5 } from '@/lib/api';
-import { useSession } from '@/store/session';
-import { Card, CardContent } from '@/components/ui/card';
+import { useLocation, Link } from 'wouter';
+import { BookOpen, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const [, navigate] = useLocation();
-  const setToken = useSession((s) => s.setToken);
-  const [email, setEmail] = useState('founder@arxivcopilot.ai');
-  const [password, setPassword] = useState('research');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setError('');
-    try {
-      const session = await v5.login(email, password);
-      setToken(session.access_token);
-      navigate('/dashboard');
-    } catch {
-      setError('Unable to sign in with those credentials.');
-    }
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    navigate('/dashboard');
   }
 
   return (
-    <main className="grid min-h-screen place-items-center grid-bg p-6">
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6">
-            <h1 className="text-2xl font-semibold">Welcome back</h1>
-            <p className="mt-2 text-sm text-zinc-400">Sign in to your research workspace.</p>
-            <form onSubmit={submit} className="mt-6 space-y-4">
+    <div className="min-h-screen bg-[#F3F3F3] flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-[#B9FF66] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="h-6 w-6 text-[#191A23]" />
+          </div>
+          <h1 className="text-3xl font-bold text-[#191A23]">Welcome back</h1>
+          <p className="text-[#898989] mt-2">Sign in to your research workspace</p>
+        </div>
+
+        <div className="bg-white border border-[#191A23] rounded-2xl p-8">
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#191A23] mb-1.5">Email</label>
               <input
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2"
+                type="email"
+                className="p-input"
+                placeholder="you@research.org"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#191A23] mb-1.5">Password</label>
               <input
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2"
                 type="password"
+                className="p-input"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              {error && <p className="text-sm text-red-300">{error}</p>}
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200"
-              >
-                Sign in
-              </button>
-            </form>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </main>
+            </div>
+            <button type="submit" className="p-btn-dark w-full justify-center py-2.5 text-sm mt-2">
+              Sign in <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-[#898989] mt-6">
+          Don't need an account?{' '}
+          <Link href="/search" className="text-[#191A23] font-medium hover:underline">
+            Search papers directly →
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
